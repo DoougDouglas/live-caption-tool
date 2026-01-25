@@ -2,62 +2,270 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Captura de Live para n8n</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Audio Uplink v2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0a0a12;
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --terminal-green: #39ff14;
+            --glass-bg: rgba(20, 20, 35, 0.7);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(0, 243, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.1) 0%, transparent 50%);
+            font-family: 'Share Tech Mono', monospace;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Container principal com efeito de vidro */
+        .interface-container {
+            width: 90%;
+            max-width: 800px;
+            padding: 30px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 
+                0 0 20px rgba(0, 243, 255, 0.2),
+                inset 0 0 20px rgba(0, 243, 255, 0.1);
+            position: relative;
+        }
+
+        /* Cabeçalho */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            border-bottom: 2px solid rgba(0, 243, 255, 0.3);
+            padding-bottom: 15px;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        /* Indicador de Status Pulsante */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--neon-cyan);
+        }
+
+        .status-light {
+            width: 12px;
+            height: 12px;
+            background-color: var(--terminal-green);
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 10px var(--terminal-green);
+            animation: pulse 2s infinite;
+        }
+
+        /* Área de visualização em tempo real (Interim) */
+        .live-preview {
+            font-size: 1.5rem;
+            min-height: 60px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* Janela do Terminal de Logs */
+        .terminal-window {
+            background-color: #000;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 5px;
+            height: 250px;
+            padding: 15px;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+
+        /* Efeito de Scanline no terminal */
+        .terminal-window::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        #log {
+            color: var(--terminal-green);
+            font-size: 1rem;
+            line-height: 1.4;
+            z-index: 1;
+            position: relative;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+        }
+        .log-timestamp { color: var(--neon-pink); margin-right: 10px; font-size: 0.8em;}
+        .log-sending { color: var(--neon-cyan); }
+        .log-success { color: var(--terminal-green); }
+        .log-error { color: red; }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 4px; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); opacity: 1; }
+            70% { box-shadow: 0 0 0 10px rgba(57, 255, 20, 0); opacity: 0.8; }
+            100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); opacity: 1; }
+        }
+    </style>
 </head>
 <body>
-    <h1>Escutando a Live... 🎙️</h1>
-    <div id="log">Aguardando áudio...</div>
+    <div class="interface-container">
+        <div class="header">
+            <h1><span style="font-size: 1.5rem">📡</span> Audio Uplink Sys.</h1>
+            <div class="status-indicator">
+                <div class="status-light" id="statusLight"></div>
+                <span id="statusText">ONLINE // ESCUTANDO</span>
+            </div>
+        </div>
+
+        <div class="live-preview" id="interimResult">
+            ...aguardando entrada de voz...
+        </div>
+
+        <div class="terminal-window">
+            <div id="log">
+                <div class="log-entry">> SYSTEM BOOT... OK</div>
+                <div class="log-entry">> CONECTANDO AO N8N... OK</div>
+                <div class="log-entry">> AGUARDANDO DADOS DE ÁUDIO...</div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // URL do seu Webhook de Produção do n8n (Method: POST)
+        // URL do seu Webhook (MANTIDA A SUA ORIGINAL)
         const WEBHOOK_URL = 'https://n8n.squirrelstore.com.br/webhook/537866eb-700d-431a-83b5-13da0dcad0aa';
 
+        const interimDisplay = document.getElementById('interimResult');
+        const logDiv = document.getElementById('log');
+        const statusText = document.getElementById('statusText');
+        const statusLight = document.getElementById('statusLight');
+
+        // Função auxiliar para logs bonitos no terminal
+        function addLog(message, type = 'sending') {
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second:'2-digit' });
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<span class="log-timestamp">[${time}]</span> > ${message}`;
+            logDiv.appendChild(entry);
+            // Mantém o scroll sempre embaixo
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
         const recognition = new webkitSpeechRecognition();
-        recognition.continuous = true; // Não para de ouvir
-        recognition.interimResults = true; // Necessário para detectar o 'isFinal'
+        recognition.continuous = true; 
+        recognition.interimResults = true; 
         recognition.lang = 'pt-BR';
 
+        recognition.onstart = function() {
+            statusText.innerText = "ONLINE // ESCUTANDO";
+            statusLight.style.backgroundColor = "var(--terminal-green)";
+            statusLight.style.animation = "pulse 2s infinite";
+        };
+
         recognition.onresult = function(event) {
-            let transcription = '';
-            
-            // Loop nos resultados para achar a frase finalizada
+            let finalTranscription = '';
+            let interimTranscription = '';
+
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    transcription = event.results[i][0].transcript.trim();
-                    console.log("Frase Finalizada: " + transcription);
+                    finalTranscription = event.results[i][0].transcript.trim();
                     
-                    // Envia para o n8n apenas quando a frase fecha
-                    enviarParaN8n(transcription);
+                    // Limpa o preview pois a frase fechou
+                    interimDisplay.innerText = "...";
+                    // Envia
+                    enviarParaN8n(finalTranscription);
+
+                } else {
+                    // Se não é final, é o que está sendo dito AGORA. Mostra no preview.
+                    interimTranscription += event.results[i][0].transcript;
                 }
+            }
+
+            // Atualiza o display de tempo real se houver algo sendo dito
+            if (interimTranscription) {
+                interimDisplay.innerText = interimTranscription;
             }
         };
 
         recognition.start();
         
-        // Reinicia se cair (o Chrome gosta de cortar se ficar silêncio)
         recognition.onend = function() {
-            console.log("Reiniciando serviço de voz...");
-            recognition.start();
+            statusText.innerText = "OFFLINE // REINICIANDO...";
+            statusLight.style.backgroundColor = "red";
+            statusLight.style.animation = "none";
+            addLog("Serviço de voz caiu. Tentando reconectar...", "error");
+            setTimeout(() => { recognition.start(); }, 1000);
         };
 
         function enviarParaN8n(texto) {
-            const logDiv = document.getElementById('log');
-            logDiv.innerText = "Enviando: " + texto;
+            if(!texto) return;
+
+            statusText.innerText = "UPLINK // ENVIANDO DADOS...";
+            statusLight.style.backgroundColor = "var(--neon-cyan)";
+            
+            addLog(`Pacote de voz detectado: "${texto}"`, 'sending');
 
             fetch(WEBHOOK_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     frase: texto,
                     timestamp: new Date().toISOString()
                 })
             })
-            .then(response => console.log('Sucesso n8n'))
+            .then(response => {
+                addLog('Confirmação de recebimento do N8N: OK', 'success');
+                statusText.innerText = "ONLINE // ESCUTANDO";
+                statusLight.style.backgroundColor = "var(--terminal-green)";
+            })
             .catch(error => {
-                console.error('Erro ao enviar:', error);
-                // DICA: Se der erro de CORS, veja o aviso abaixo
+                addLog(`ERRO NO UPLINK: ${error.message}`, 'error');
+                statusText.innerText = "ERRO // FALHA DE CONEXÃO";
+                statusLight.style.backgroundColor = "red";
             });
         }
     </script>
