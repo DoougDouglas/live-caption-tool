@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Captura de Live para n8n</title>
+</head>
+<body>
+    <h1>Escutando a Live... 🎙️</h1>
+    <div id="log">Aguardando áudio...</div>
+
+    <script>
+        // URL do seu Webhook de Produção do n8n (Method: POST)
+        const WEBHOOK_URL = 'https://n8n.squirrelstore.com.br/webhook/537866eb-700d-431a-83b5-13da0dcad0aa';
+
+        const recognition = new webkitSpeechRecognition();
+        recognition.continuous = true; // Não para de ouvir
+        recognition.interimResults = true; // Necessário para detectar o 'isFinal'
+        recognition.lang = 'pt-BR';
+
+        recognition.onresult = function(event) {
+            let transcription = '';
+            
+            // Loop nos resultados para achar a frase finalizada
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    transcription = event.results[i][0].transcript.trim();
+                    console.log("Frase Finalizada: " + transcription);
+                    
+                    // Envia para o n8n apenas quando a frase fecha
+                    enviarParaN8n(transcription);
+                }
+            }
+        };
+
+        recognition.start();
+        
+        // Reinicia se cair (o Chrome gosta de cortar se ficar silêncio)
+        recognition.onend = function() {
+            console.log("Reiniciando serviço de voz...");
+            recognition.start();
+        };
+
+        function enviarParaN8n(texto) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerText = "Enviando: " + texto;
+
+            fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    frase: texto,
+                    timestamp: new Date().toISOString()
+                })
+            })
+            .then(response => console.log('Sucesso n8n'))
+            .catch(error => {
+                console.error('Erro ao enviar:', error);
+                // DICA: Se der erro de CORS, veja o aviso abaixo
+            });
+        }
+    </script>
+</body>
+</html>
