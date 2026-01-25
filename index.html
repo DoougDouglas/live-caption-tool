@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Audio Uplink v2.1 - TechPRO</title>
+    <title>Live Audio Uplink v3.0 - TechPRO</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
@@ -11,8 +11,9 @@
             --bg-color: #0a0a12;
             --neon-cyan: #00f3ff;
             --neon-pink: #ff00ff;
+            --neon-amber: #ffae00; /* Nova cor para IA */
             --terminal-green: #39ff14;
-            --glass-bg: rgba(20, 20, 35, 0.7);
+            --glass-bg: rgba(20, 20, 35, 0.85);
         }
 
         body {
@@ -21,8 +22,9 @@
             height: 100vh;
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 20% 30%, rgba(0, 243, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.1) 0%, transparent 50%);
+                linear-gradient(rgba(0, 20, 0, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 20, 0, 0.2) 1px, transparent 1px);
+            background-size: 30px 30px;
             font-family: 'Share Tech Mono', monospace;
             color: #fff;
             display: flex;
@@ -31,248 +33,268 @@
             overflow: hidden;
         }
 
-        /* Container principal com efeito de vidro */
-        .interface-container {
-            width: 90%;
-            max-width: 800px;
-            padding: 30px;
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Dividido em 2 colunas */
+            gap: 20px;
+            width: 95%;
+            max-width: 1200px;
+            height: 80vh;
+        }
+
+        /* Paineis Gerais */
+        .panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(15px);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            box-shadow: 
-                0 0 30px rgba(0, 243, 255, 0.1),
-                inset 0 0 20px rgba(0, 243, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             position: relative;
         }
 
-        /* Cabeçalho */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 25px;
-            border-bottom: 2px solid rgba(0, 243, 255, 0.3);
-            padding-bottom: 15px;
+        /* Painel Esquerdo: Input de Voz */
+        .panel-input {
+            border-left: 3px solid var(--neon-cyan);
         }
 
-        h1 {
+        /* Painel Direito: Output da IA */
+        .panel-output {
+            border-right: 3px solid var(--neon-amber);
+            box-shadow: inset 0 0 50px rgba(255, 174, 0, 0.05);
+        }
+
+        h2 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
-            margin: 0;
-            text-transform: uppercase;
+            margin-top: 0;
+            font-size: 1.2rem;
             letter-spacing: 2px;
-            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
-        }
-
-        /* Indicador de Status Pulsante */
-        .status-indicator {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
-            color: var(--neon-cyan);
         }
 
-        .status-light {
-            width: 12px;
-            height: 12px;
-            background-color: var(--terminal-green);
-            border-radius: 50%;
-            margin-right: 10px;
-            box-shadow: 0 0 10px var(--terminal-green);
-            animation: pulse 2s infinite;
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 4px;
         }
 
-        /* Área de visualização em tempo real (Interim) */
-        .live-preview {
-            font-size: 1.4rem;
-            min-height: 60px;
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.8);
-            text-align: center;
-            font-style: italic;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-        }
-
-        /* Janela do Terminal de Logs */
+        /* Área de Terminal (Esquerda) */
         .terminal-window {
-            background-color: rgba(0, 0, 0, 0.8);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 5px;
-            height: 250px;
-            padding: 15px;
+            flex-grow: 1;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 10px;
             overflow-y: auto;
-            position: relative;
-            box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.1);
-        }
-
-        /* Efeito de Scanline no terminal */
-        .terminal-window::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 2;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-        }
-
-        #log {
-            color: var(--terminal-green);
-            font-size: 0.9rem;
-            line-height: 1.4;
-            z-index: 1;
-            position: relative;
             font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            margin-top: 10px;
         }
 
-        .log-entry { margin-bottom: 6px; }
-        .log-timestamp { color: rgba(255, 0, 255, 0.7); margin-right: 8px; font-size: 0.8em;}
-        .log-sending { color: var(--neon-cyan); }
-        .log-success { color: var(--terminal-green); }
-        .log-error { color: #ff3333; }
-
-        /* Scrollbar personalizada */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 3px; }
-
-        /* Rodapé com Créditos da TechPRO */
-        .footer-credits {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.4);
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
+        /* Área de IA (Direita) */
+        .ai-display-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            padding-top: 10px;
         }
 
-        .brand-name {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 8px var(--neon-cyan);
-            margin-left: 5px;
+        .ai-card {
+            background: rgba(255, 174, 0, 0.05);
+            border: 1px solid var(--neon-amber);
+            border-radius: 5px;
+            padding: 15px;
+            animation: slideIn 0.5s ease-out;
+            position: relative;
         }
         
-        /* Cursor piscante no final do crédito */
-        .footer-credits::after {
-            content: '|';
-            display: inline-block;
-            margin-left: 5px;
+        .ai-card::before {
+            content: "SUGESTÃO IA";
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--bg-color);
+            color: var(--neon-amber);
+            font-size: 0.7rem;
+            padding: 0 5px;
+            border: 1px solid var(--neon-amber);
+        }
+
+        .ai-text {
+            font-size: 1.1rem;
+            color: #fff;
+            line-height: 1.4;
+        }
+
+        .ai-context {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        /* Input em tempo real */
+        .live-preview {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px dashed var(--neon-cyan);
             color: var(--neon-cyan);
-            animation: blink 1s step-end infinite;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); opacity: 1; }
-            70% { box-shadow: 0 0 0 10px rgba(57, 255, 20, 0); opacity: 0.8; }
-            100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); opacity: 1; }
+        /* Logs e Cores */
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px;}
+        .log-timestamp { color: var(--neon-pink); font-size: 0.8em; margin-right: 5px; }
+        .txt-cyan { color: var(--neon-cyan); }
+        
+        /* Rodapé */
+        .footer {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 10px;
         }
+        .blink { animation: blink 1s infinite; }
 
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
         @keyframes blink { 50% { opacity: 0; } }
+
+        /* Responsividade para telas menores */
+        @media (max-width: 768px) {
+            .main-grid { grid-template-columns: 1fr; height: auto; }
+            .panel { height: 400px; }
+        }
     </style>
 </head>
 <body>
-    <div class="interface-container">
-        <div class="header">
-            <h1><span style="font-size: 1.5rem">📡</span> Audio Uplink Sys.</h1>
-            <div class="status-indicator">
-                <div class="status-light" id="statusLight"></div>
-                <span id="statusText">INICIALIZANDO...</span>
+
+    <div class="main-grid">
+        
+        <div class="panel panel-input">
+            <h2>
+                <span class="txt-cyan">📡 INPUT DE ÁUDIO</span>
+                <div class="status-badge" id="statusBadge" style="color: var(--terminal-green)">ONLINE</div>
+            </h2>
+            
+            <div class="terminal-window" id="logTerminal">
+                <div class="log-entry">> SISTEMA INICIADO...</div>
+                <div class="log-entry">> MICROFONE CONECTADO.</div>
+            </div>
+
+            <div class="live-preview">
+                <span id="interimText">...aguardando voz...</span>
             </div>
         </div>
 
-        <div class="live-preview" id="interimResult">
-            ...aguardando entrada de voz...
-        </div>
+        <div class="panel panel-output">
+            <h2>
+                <span style="color: var(--neon-amber)">🧠 TECHPRO AI CORE</span>
+                <div class="status-badge" id="aiStatus">AGUARDANDO DADOS</div>
+            </h2>
 
-        <div class="terminal-window">
-            <div id="log">
-                <div class="log-entry">> SYSTEM KERNEL BOOT... OK</div>
-                <div class="log-entry">> CARREGANDO MÓDULOS DE IA... OK</div>
-                <div class="log-entry">> CONECTANDO AO NODO N8N... OK</div>
-                <div class="log-entry" style="color: var(--neon-cyan)">> PRONTO PARA CAPTURA DE ÁUDIO.</div>
-                <br>
+            <div class="ai-display-area" id="aiFeed">
+                <div style="text-align: center; color: rgba(255,255,255,0.2); margin-top: 50px;">
+                    NENHUMA ANÁLISE RECEBIDA AINDA
+                </div>
             </div>
         </div>
 
-        <div class="footer-credits">
-            Sistema Desenvolvido por <span class="brand-name">TechPRO</span>
+        <div class="footer">
+            SISTEMA DESENVOLVIDO POR <strong style="color: var(--neon-cyan)">TECHPRO</strong> <span class="blink">|</span>
         </div>
     </div>
 
     <script>
-        // URL do seu Webhook (MANTIDA A SUA ORIGINAL)
+        // --- CONFIGURAÇÃO ---
         const WEBHOOK_URL = 'https://n8n.squirrelstore.com.br/webhook/537866eb-700d-431a-83b5-13da0dcad0aa';
+        // --------------------
 
-        const interimDisplay = document.getElementById('interimResult');
-        const logDiv = document.getElementById('log');
-        const statusText = document.getElementById('statusText');
-        const statusLight = document.getElementById('statusLight');
+        const logTerminal = document.getElementById('logTerminal');
+        const interimText = document.getElementById('interimText');
+        const aiFeed = document.getElementById('aiFeed');
+        const statusBadge = document.getElementById('statusBadge');
+        const aiStatus = document.getElementById('aiStatus');
 
-        // Função auxiliar para logs bonitos no terminal
-        function addLog(message, type = 'sending') {
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second:'2-digit' });
-            const entry = document.createElement('div');
-            entry.className = `log-entry log-${type}`;
-            entry.innerHTML = `<span class="log-timestamp">[${time}]</span> > ${message}`;
-            logDiv.appendChild(entry);
-            logDiv.scrollTop = logDiv.scrollHeight;
+        function addLog(msg) {
+            const time = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `<span class="log-timestamp">[${time}]</span> ${msg}`;
+            logTerminal.appendChild(div);
+            logTerminal.scrollTop = logTerminal.scrollHeight;
         }
 
+        function addAICard(contexto, respostaIA) {
+            // Remove o texto de "vazio" se for a primeira mensagem
+            if(aiFeed.innerText.includes("NENHUMA ANÁLISE")) aiFeed.innerHTML = "";
+
+            const card = document.createElement('div');
+            card.className = 'ai-card';
+            card.innerHTML = `
+                <div class="ai-context">Pastor disse: "${contexto}"</div>
+                <div class="ai-text">${respostaIA}</div>
+            `;
+            aiFeed.prepend(card); // Adiciona no topo
+        }
+
+        // --- RECONHECIMENTO DE VOZ ---
         const recognition = new webkitSpeechRecognition();
-        recognition.continuous = true; 
-        recognition.interimResults = true; 
+        recognition.continuous = true;
+        recognition.interimResults = true;
         recognition.lang = 'pt-BR';
 
-        recognition.onstart = function() {
-            statusText.innerText = "ONLINE // ESCUTANDO";
-            statusLight.style.backgroundColor = "var(--terminal-green)";
-            statusLight.style.animation = "pulse 2s infinite";
+        recognition.onstart = () => {
+            statusBadge.innerText = "ONLINE";
+            statusBadge.style.color = "var(--terminal-green)";
         };
 
-        recognition.onresult = function(event) {
-            let finalTranscription = '';
-            let interimTranscription = '';
+        recognition.onend = () => {
+            statusBadge.innerText = "RECONECTANDO...";
+            statusBadge.style.color = "red";
+            setTimeout(() => recognition.start(), 1000);
+        };
+
+        recognition.onresult = (event) => {
+            let finalTranscript = '';
+            let interimTranscript = '';
 
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    finalTranscription = event.results[i][0].transcript.trim();
-                    interimDisplay.innerText = "...processando...";
-                    enviarParaN8n(finalTranscription);
+                    finalTranscript = event.results[i][0].transcript.trim();
+                    enviarParaN8n(finalTranscript);
+                    interimText.innerText = "...";
                 } else {
-                    interimTranscription += event.results[i][0].transcript;
+                    interimTranscript += event.results[i][0].transcript;
                 }
             }
 
-            if (interimTranscription) {
-                interimDisplay.innerText = interimTranscription;
-            }
+            if(interimTranscript) interimText.innerText = interimTranscript;
         };
 
         recognition.start();
-        
-        recognition.onend = function() {
-            statusText.innerText = "OFFLINE // REINICIANDO...";
-            statusLight.style.backgroundColor = "red";
-            statusLight.style.animation = "none";
-            addLog("Sinal de áudio perdido. Tentando reconexão...", "error");
-            setTimeout(() => { recognition.start(); }, 1500);
-        };
 
+        // --- ENVIO E RECEBIMENTO DO N8N ---
         function enviarParaN8n(texto) {
             if(!texto) return;
-
-            statusText.innerText = "UPLINK // ENVIANDO DADOS...";
-            statusLight.style.backgroundColor = "var(--neon-cyan)";
             
-            addLog(`Pacote de voz detectado: "${texto}"`, 'sending');
+            addLog(`Enviando: "${texto.substring(0, 20)}..."`);
+            aiStatus.innerText = "PROCESSANDO...";
+            aiStatus.style.color = "var(--neon-amber)";
 
             fetch(WEBHOOK_URL, {
                 method: 'POST',
@@ -283,18 +305,28 @@
                 })
             })
             .then(response => {
-                // Simulando um pequeno delay de rede para parecer mais real
-                setTimeout(() => {
-                    addLog('Confirmação de recebimento do N8N: OK (Status 200)', 'success');
-                    statusText.innerText = "ONLINE // ESCUTANDO";
-                    statusLight.style.backgroundColor = "var(--terminal-green)";
-                    interimDisplay.innerText = "...aguardando entrada de voz...";
-                }, 500);
+                // Aqui é o pulo do gato: Esperamos a resposta JSON do n8n
+                return response.json(); 
             })
-            .catch(error => {
-                addLog(`ERRO CRÍTICO NO UPLINK: ${error.message}`, 'error');
-                statusText.innerText = "ERRO // FALHA DE CONEXÃO";
-                statusLight.style.backgroundColor = "red";
+            .then(data => {
+                // Sucesso! O n8n devolveu algo
+                console.log("Resposta n8n:", data);
+                addLog("Recebido do Core AI.");
+                aiStatus.innerText = "AGUARDANDO DADOS";
+                aiStatus.style.color = "#fff";
+
+                // O campo 'comentario' depende de como você nomeou no nó "Respond to Webhook"
+                if(data.comentario) {
+                    addAICard(texto, data.comentario);
+                } else {
+                    addAICard(texto, "Resposta recebida mas sem campo 'comentario'. Verifique o n8n.");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                addLog("Erro de conexão/timeout.");
+                aiStatus.innerText = "ERRO";
+                aiStatus.style.color = "red";
             });
         }
     </script>
