@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Audio Uplink v3.1 - TechPRO</title>
+    <title>Live Audio Uplink v3.2 - TechPRO</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
@@ -13,7 +13,7 @@
             --neon-pink: #ff00ff;
             --neon-amber: #ffae00;
             --terminal-green: #39ff14;
-            --glass-bg: rgba(20, 20, 35, 0.9);
+            --glass-bg: rgba(20, 20, 35, 0.95);
         }
 
         body {
@@ -30,7 +30,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden; /* Impede scroll na página toda */
+            overflow: hidden;
         }
 
         .main-grid {
@@ -39,7 +39,7 @@
             gap: 20px;
             width: 95%;
             max-width: 1400px;
-            height: 85vh; /* Altura fixa para garantir o layout */
+            height: 85vh;
         }
 
         /* Paineis Gerais */
@@ -51,9 +51,10 @@
             display: flex;
             flex-direction: column;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
-            height: 100%; /* Ocupa toda a altura do grid */
+            height: 100%;
             box-sizing: border-box;
-            overflow: hidden; /* O painel não rola, só o conteúdo dentro dele */
+            overflow: hidden;
+            position: relative;
         }
 
         .panel-input { border-left: 3px solid var(--neon-cyan); }
@@ -70,62 +71,75 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-shrink: 0; /* Cabeçalho não encolhe */
+            flex-shrink: 0;
         }
 
-        .status-badge {
-            font-size: 0.7rem;
-            padding: 4px 10px;
-            background: rgba(0,0,0,0.6);
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        /* --- ÁREAS DE SCROLL --- */
-        
-        /* Terminal Esquerdo */
-        .terminal-window {
-            flex-grow: 1; /* Ocupa o espaço restante */
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 10px;
-            overflow-y: auto; /* SCROLL AQUI */
-            font-size: 0.85rem;
-            margin-bottom: 15px;
-        }
-
-        /* Feed de IA Direito */
-        .ai-display-area {
-            flex-grow: 1; /* Ocupa o espaço restante */
+        /* BOTÃO POWER (LIGA/DESLIGA) */
+        .power-btn {
+            background: transparent;
+            border: 2px solid #555;
+            color: #555;
+            padding: 5px 15px;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
             display: flex;
-            flex-direction: column;
-            gap: 15px;
-            overflow-y: auto; /* SCROLL AQUI */
-            padding-right: 5px; /* Espaço para a scrollbar não colar */
-            padding-bottom: 10px;
+            align-items: center;
+            gap: 5px;
         }
 
-        /* Estilização da Scrollbar (Webkit) */
+        .power-btn.active {
+            border-color: var(--terminal-green);
+            color: var(--terminal-green);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+            animation: pulse-green 2s infinite;
+        }
+        
+        .power-btn:hover { background: rgba(255,255,255,0.05); }
+
+        /* Scrollbars */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0a0a12; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
-        
-        /* Cores específicas de scrollbar por painel */
         .terminal-window::-webkit-scrollbar-thumb { background: var(--neon-cyan); }
         .ai-display-area::-webkit-scrollbar-thumb { background: var(--neon-amber); }
 
+        /* Terminal e Feed */
+        .terminal-window {
+            flex-grow: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
 
-        /* Cards da IA */
+        .ai-display-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            padding-right: 5px;
+            padding-bottom: 10px;
+        }
+
+        /* --- CARDS DA IA COM BOTÃO COPIAR --- */
         .ai-card {
             background: rgba(255, 174, 0, 0.05);
             border: 1px solid var(--neon-amber);
             border-left: 4px solid var(--neon-amber);
             border-radius: 4px;
             padding: 15px;
+            padding-right: 40px; /* Espaço para o botão */
             animation: slideIn 0.3s ease-out;
             position: relative;
-            flex-shrink: 0; /* Garante que o card não seja esmagado */
+            flex-shrink: 0;
         }
         
         .ai-context {
@@ -142,27 +156,47 @@
             line-height: 1.5;
         }
 
-        /* Input Live */
+        /* Botão Copiar */
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--neon-amber);
+            color: var(--neon-amber);
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { background: var(--neon-amber); color: #000; }
+        .copy-btn:active { transform: scale(0.95); }
+
+        /* Input Live (FIXED SCROLL) */
         .live-preview {
-            flex-shrink: 0; /* Não encolhe */
+            flex-shrink: 0;
             padding: 15px;
             background: rgba(0, 243, 255, 0.05);
             border: 1px dashed var(--neon-cyan);
             color: var(--neon-cyan);
-            min-height: 50px;
-            display: flex;
-            align-items: center;
-            font-size: 1.1rem;
+            height: 80px; /* Altura fixa */
+            max-height: 80px;
+            overflow-y: auto; /* Scroll se o texto for grande */
+            display: block; /* Mudei de flex para block para o texto quebrar */
+            font-size: 1rem;
+            word-wrap: break-word; /* Quebra linha */
         }
 
         .log-entry { margin-bottom: 4px; font-size: 0.8rem; opacity: 0.8; }
         .log-timestamp { color: var(--neon-pink); margin-right: 5px; }
         .footer { grid-column: 1 / -1; text-align: center; margin-top: 10px; font-size: 0.7rem; color: #555; }
         
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(57, 255, 20, 0); } 100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); } }
     </style>
 </head>
 <body>
@@ -172,23 +206,25 @@
         <div class="panel panel-input">
             <h2>
                 <span style="color: var(--neon-cyan)">📡 INPUT DE ÁUDIO</span>
-                <div class="status-badge" id="statusBadge">OFFLINE</div>
+                <button id="powerBtn" class="power-btn" onclick="toggleSystem()">
+                    ⛔ OFF
+                </button>
             </h2>
             
             <div class="terminal-window" id="logTerminal">
-                <div class="log-entry">> SISTEMA V3.1 PRONTO.</div>
-                <div class="log-entry">> AGUARDANDO MICROFONE...</div>
+                <div class="log-entry">> TECHPRO SYSTEM v3.2 INICIALIZADO.</div>
+                <div class="log-entry">> SISTEMA EM STANDBY. CLIQUE EM 'OFF' PARA LIGAR.</div>
             </div>
 
             <div class="live-preview">
-                <span id="interimText">...aguardando...</span>
+                <span id="interimText" style="opacity: 0.5;">...sistema desligado...</span>
             </div>
         </div>
 
         <div class="panel panel-output">
             <h2>
                 <span style="color: var(--neon-amber)">🧠 TECHPRO AI</span>
-                <div class="status-badge" id="aiStatus">STANDBY</div>
+                <div id="aiStatus" style="font-size: 0.7rem; color: #555;">AGUARDANDO</div>
             </h2>
 
             <div class="ai-display-area" id="aiFeed">
@@ -198,7 +234,7 @@
             </div>
         </div>
 
-        <div class="footer">TECHPRO SYSTEM v3.1</div>
+        <div class="footer">TECHPRO SYSTEM v3.2 - MISSION CONTROL</div>
     </div>
 
     <script>
@@ -207,80 +243,143 @@
         const logTerminal = document.getElementById('logTerminal');
         const interimText = document.getElementById('interimText');
         const aiFeed = document.getElementById('aiFeed');
-        const statusBadge = document.getElementById('statusBadge');
+        const powerBtn = document.getElementById('powerBtn');
         const aiStatus = document.getElementById('aiStatus');
 
+        let isSystemOn = false; // Controle mestre do sistema
+        let recognition = null;
+
+        // --- SISTEMA DE LOGS ---
         function addLog(msg) {
             const time = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
             const div = document.createElement('div');
             div.className = 'log-entry';
             div.innerHTML = `<span class="log-timestamp">[${time}]</span> ${msg}`;
             logTerminal.appendChild(div);
-            // Auto-scroll para baixo no terminal
             logTerminal.scrollTop = logTerminal.scrollHeight;
+        }
+
+        // --- LÓGICA DE CARDS E COPY ---
+        function copyToClipboard(text, btnElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Feedback visual no botão
+                const originalIcon = btnElement.innerHTML;
+                btnElement.innerHTML = '✅';
+                btnElement.style.borderColor = 'var(--terminal-green)';
+                btnElement.style.color = 'var(--terminal-green)';
+                
+                setTimeout(() => {
+                    btnElement.innerHTML = originalIcon;
+                    btnElement.style.borderColor = 'var(--neon-amber)';
+                    btnElement.style.color = 'var(--neon-amber)';
+                }, 2000);
+            });
         }
 
         function addAICard(contexto, respostaIA) {
             if(aiFeed.innerText.includes("O histórico")) aiFeed.innerHTML = "";
 
+            // Cria o ID único para facilitar o copy
             const card = document.createElement('div');
             card.className = 'ai-card';
+            
+            // Layout do Card com Botão de Copiar
             card.innerHTML = `
-                <div class="ai-context">Frase: "${contexto}"</div>
+                <div class="ai-context">Frase: "${contexto.substring(0, 50)}..."</div>
                 <div class="ai-text">${respostaIA}</div>
+                <button class="copy-btn" title="Copiar para área de transferência" onclick="copyToClipboard('${respostaIA.replace(/'/g, "\\'")}', this)">
+                    📋
+                </button>
             `;
             
-            // ADICIONA NO TOPO (Mais recente primeiro)
             aiFeed.prepend(card); 
-            
-            // Opcional: Se quiser que role para o topo automaticamente para ver o novo
             aiFeed.scrollTop = 0;
         }
 
-        // --- VOZ ---
-        const recognition = new webkitSpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'pt-BR';
+        // --- CONTROLE POWER (ON/OFF) ---
+        function toggleSystem() {
+            isSystemOn = !isSystemOn;
 
-        recognition.onstart = () => {
-            statusBadge.innerText = "ONLINE";
-            statusBadge.style.color = "var(--terminal-green)";
-            statusBadge.style.borderColor = "var(--terminal-green)";
-        };
-
-        recognition.onend = () => {
-            statusBadge.innerText = "RECONECTANDO...";
-            statusBadge.style.color = "red";
-            setTimeout(() => recognition.start(), 1500);
-        };
-
-        recognition.onresult = (event) => {
-            let finalTranscript = '';
-            let interimTranscript = '';
-
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript = event.results[i][0].transcript.trim();
-                    interimText.innerText = "...";
-                    enviarParaN8n(finalTranscript);
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
+            if (isSystemOn) {
+                // LIGAR
+                powerBtn.innerHTML = "⚡ ON";
+                powerBtn.classList.add("active");
+                interimText.innerText = "...aguardando voz...";
+                interimText.style.opacity = "1";
+                addLog("SISTEMA LIGADO. INICIANDO ESCUTA...");
+                startRecognition();
+            } else {
+                // DESLIGAR
+                powerBtn.innerHTML = "⛔ OFF";
+                powerBtn.classList.remove("active");
+                interimText.innerText = "...sistema desligado...";
+                interimText.style.opacity = "0.5";
+                addLog("SISTEMA DESLIGADO.");
+                if(recognition) recognition.stop();
             }
-            if(interimTranscript) interimText.innerText = interimTranscript;
-        };
+        }
 
-        recognition.start();
+        // --- RECONHECIMENTO DE VOZ ---
+        function startRecognition() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert("Seu navegador não suporta reconhecimento de voz. Use o Chrome.");
+                return;
+            }
 
-        // --- CONEXÃO ---
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'pt-BR';
+
+            recognition.onstart = () => {
+                addLog("Microfone ativo.");
+            };
+
+            recognition.onend = () => {
+                // Só reinicia se o sistema estiver LIGADO (isSystemOn == true)
+                if (isSystemOn) {
+                    addLog("Reiniciando serviço de voz...");
+                    setTimeout(() => recognition.start(), 1000);
+                } else {
+                    addLog("Serviço de voz encerrado.");
+                }
+            };
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript = event.results[i][0].transcript.trim();
+                        interimText.innerText = "...";
+                        
+                        // Só envia se tiver texto
+                        if(finalTranscript.length > 0) {
+                            enviarParaN8n(finalTranscript);
+                        }
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                
+                if(interimTranscript) {
+                    interimText.innerText = interimTranscript;
+                    // Auto-scroll no input text caso seja grande
+                    interimText.parentNode.scrollTop = interimText.parentNode.scrollHeight;
+                }
+            };
+
+            recognition.start();
+        }
+
+        // --- CONEXÃO N8N ---
         function enviarParaN8n(texto) {
-            if(!texto) return;
+            if(!isSystemOn) return; // Segurança extra
             
-            addLog(`Enviando pacote: "${texto.substring(0, 15)}..."`);
+            addLog(`Enviando: "${texto.substring(0, 15)}..."`);
             aiStatus.innerText = "PROCESSANDO...";
             aiStatus.style.color = "var(--neon-amber)";
-            aiStatus.style.borderColor = "var(--neon-amber)";
 
             fetch(WEBHOOK_URL, {
                 method: 'POST',
@@ -289,22 +388,21 @@
             })
             .then(res => res.json())
             .then(data => {
-                aiStatus.innerText = "RECEBIDO";
+                aiStatus.innerText = "OK";
                 aiStatus.style.color = "#fff";
-                aiStatus.style.borderColor = "rgba(255,255,255,0.2)";
                 
                 if(data.comentario) {
                     addAICard(texto, data.comentario);
-                    addLog("Resposta recebida com sucesso.");
+                    addLog("Sugestão recebida.");
                 } else {
-                    addAICard(texto, "⚠️ Erro: N8N não retornou campo 'comentario'.");
+                    addAICard(texto, "⚠️ Erro no JSON do N8N.");
                 }
             })
             .catch(err => {
                 console.error(err);
                 aiStatus.innerText = "ERRO";
                 aiStatus.style.color = "red";
-                addLog("Falha na conexão com N8N.");
+                addLog("Falha N8N.");
             });
         }
     </script>
