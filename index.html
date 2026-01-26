@@ -191,7 +191,7 @@
         // --- BOOT ---
         window.onload = function() {
             const bootLog = document.getElementById('bootLog');
-            const messages = ["Carregando módulos...", "Conectando ao n8n...", "Calibrando buffer...", "TechPRO Online."];
+            const messages = ["Carregando módulos...", "Conectando ao SERVIDOR...", "Calibrando buffer...", "TechPRO Online."];
             let i = 0;
             const int = setInterval(() => { if(i<messages.length) bootLog.innerText = messages[i++]; }, 500);
             setTimeout(() => { clearInterval(int); document.getElementById('bootOverlay').style.opacity='0'; setTimeout(()=>{document.getElementById('bootOverlay').style.display='none'; document.getElementById('mainInterface').classList.add('system-ready');},500); }, 2200);
