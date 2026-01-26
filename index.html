@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Audio Uplink v3.2 - TechPRO</title>
+    <title>Live Audio Uplink v3.4 - TechPRO</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
@@ -12,6 +12,7 @@
             --neon-cyan: #00f3ff;
             --neon-pink: #ff00ff;
             --neon-amber: #ffae00;
+            --neon-red: #ff3333;
             --terminal-green: #39ff14;
             --glass-bg: rgba(20, 20, 35, 0.95);
         }
@@ -21,9 +22,7 @@
             padding: 0;
             height: 100vh;
             background-color: var(--bg-color);
-            background-image: 
-                linear-gradient(rgba(0, 20, 0, 0.2) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 20, 0, 0.2) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(0, 20, 0, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 20, 0, 0.2) 1px, transparent 1px);
             background-size: 30px 30px;
             font-family: 'Share Tech Mono', monospace;
             color: #fff;
@@ -39,10 +38,9 @@
             gap: 20px;
             width: 95%;
             max-width: 1400px;
-            height: 85vh;
+            height: 90vh;
         }
 
-        /* Paineis Gerais */
         .panel {
             background: var(--glass-bg);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -63,193 +61,167 @@
         h2 {
             font-family: 'Orbitron', sans-serif;
             margin-top: 0;
-            font-size: 1.1rem;
-            letter-spacing: 2px;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding-bottom: 15px;
-            margin-bottom: 15px;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
             display: flex;
-            justify-content: space-between;
+            gap: 10px;
             align-items: center;
-            flex-shrink: 0;
+            flex-wrap: wrap;
         }
 
-        /* BOTÃO POWER (LIGA/DESLIGA) */
-        .power-btn {
+        /* SLIDER DE CALIBRAGEM */
+        .calibration-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.7rem;
+            color: var(--neon-cyan);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-left: auto; /* Empurra pra direita */
+        }
+        
+        input[type=range] {
+            width: 100px;
+            accent-color: var(--neon-cyan);
+        }
+
+        .control-btn {
             background: transparent;
-            border: 2px solid #555;
-            color: #555;
-            padding: 5px 15px;
+            border: 1px solid #555;
+            color: #777;
+            padding: 4px 10px;
             font-family: 'Orbitron', sans-serif;
             cursor: pointer;
-            border-radius: 5px;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            font-size: 0.8rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 0.7rem;
             display: flex;
             align-items: center;
             gap: 5px;
-        }
-
-        .power-btn.active {
-            border-color: var(--terminal-green);
-            color: var(--terminal-green);
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
-            animation: pulse-green 2s infinite;
+            text-transform: uppercase;
         }
         
-        .power-btn:hover { background: rgba(255,255,255,0.05); }
+        .btn-power.active { border-color: var(--terminal-green); color: var(--terminal-green); box-shadow: 0 0 10px rgba(57,255,20,0.2); }
+        .btn-send { border-color: var(--neon-cyan); color: var(--neon-cyan); width: 100%; justify-content: center; margin-top: 10px; padding: 10px;}
+        .btn-send:hover { background: rgba(0, 243, 255, 0.2); }
+        .btn-send:active { transform: scale(0.95); }
 
-        /* Scrollbars */
+        /* SCROLLBARS E TERMINAL */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0a12; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: #0a0a12; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-        .terminal-window::-webkit-scrollbar-thumb { background: var(--neon-cyan); }
-        .ai-display-area::-webkit-scrollbar-thumb { background: var(--neon-amber); }
+        .terminal-window { flex-grow: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); padding: 10px; overflow-y: auto; font-size: 0.85rem; margin-bottom: 10px; }
+        .ai-display-area { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 5px; padding-bottom: 10px; }
 
-        /* Terminal e Feed */
-        .terminal-window {
-            flex-grow: 1;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 10px;
-            overflow-y: auto;
-            font-size: 0.85rem;
-            margin-bottom: 15px;
-        }
-
-        .ai-display-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            overflow-y: auto;
-            padding-right: 5px;
-            padding-bottom: 10px;
-        }
-
-        /* --- CARDS DA IA COM BOTÃO COPIAR --- */
         .ai-card {
             background: rgba(255, 174, 0, 0.05);
             border: 1px solid var(--neon-amber);
             border-left: 4px solid var(--neon-amber);
             border-radius: 4px;
-            padding: 15px;
-            padding-right: 40px; /* Espaço para o botão */
+            padding: 15px; padding-right: 40px;
             animation: slideIn 0.3s ease-out;
-            position: relative;
-            flex-shrink: 0;
+            position: relative; flex-shrink: 0;
         }
-        
-        .ai-context {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 8px;
-            border-bottom: 1px dashed rgba(255, 174, 0, 0.3);
-            padding-bottom: 5px;
-        }
+        .ai-context { font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 5px; border-bottom: 1px dashed rgba(255,174,0,0.3); padding-bottom: 5px; }
+        .ai-text { font-size: 1rem; color: #fff; line-height: 1.4; }
+        .copy-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--neon-amber); color: var(--neon-amber); width: 25px; height: 25px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        .ai-text {
-            font-size: 1rem;
-            color: #fff;
-            line-height: 1.5;
-        }
-
-        /* Botão Copiar */
-        .copy-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--neon-amber);
-            color: var(--neon-amber);
-            width: 30px;
-            height: 30px;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-        .copy-btn:hover { background: var(--neon-amber); color: #000; }
-        .copy-btn:active { transform: scale(0.95); }
-
-        /* Input Live (FIXED SCROLL) */
         .live-preview {
             flex-shrink: 0;
-            padding: 15px;
+            padding: 10px;
             background: rgba(0, 243, 255, 0.05);
             border: 1px dashed var(--neon-cyan);
             color: var(--neon-cyan);
-            height: 80px; /* Altura fixa */
-            max-height: 80px;
-            overflow-y: auto; /* Scroll se o texto for grande */
-            display: block; /* Mudei de flex para block para o texto quebrar */
-            font-size: 1rem;
-            word-wrap: break-word; /* Quebra linha */
+            height: 70px; max-height: 70px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            word-wrap: break-word;
+            position: relative;
         }
-
-        .log-entry { margin-bottom: 4px; font-size: 0.8rem; opacity: 0.8; }
-        .log-timestamp { color: var(--neon-pink); margin-right: 5px; }
-        .footer { grid-column: 1 / -1; text-align: center; margin-top: 10px; font-size: 0.7rem; color: #555; }
         
+        .buffer-warning { border-color: var(--neon-red); color: var(--neon-red); animation: pulse-red 1s infinite; }
+        .log-entry { margin-bottom: 3px; font-size: 0.75rem; opacity: 0.8; }
+        .log-timestamp { color: var(--neon-pink); margin-right: 5px; }
+        .footer { grid-column: 1 / -1; text-align: center; margin-top: 5px; font-size: 0.7rem; color: #555; }
+
         @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(57, 255, 20, 0); } 100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); } }
+        @keyframes pulse-red { 50% { background-color: rgba(255, 50, 50, 0.1); } }
     </style>
 </head>
 <body>
 
     <div class="main-grid">
-        
         <div class="panel panel-input">
             <h2>
-                <span style="color: var(--neon-cyan)">📡 INPUT DE ÁUDIO</span>
-                <button id="powerBtn" class="power-btn" onclick="toggleSystem()">
-                    ⛔ OFF
-                </button>
+                <button id="powerBtn" class="control-btn btn-power" onclick="toggleSystem()">⛔ OFF</button>
+                <span style="color: var(--neon-cyan)">INPUT</span>
+                
+                <div class="calibration-control">
+                    <span>FILTRO:</span>
+                    <input type="range" id="filterRange" min="0" max="50" value="10" oninput="updateFilterLabel(this.value)">
+                    <span id="filterValue">10 chars</span>
+                </div>
             </h2>
             
             <div class="terminal-window" id="logTerminal">
-                <div class="log-entry">> TECHPRO SYSTEM v3.2 INICIALIZADO.</div>
-                <div class="log-entry">> SISTEMA EM STANDBY. CLIQUE EM 'OFF' PARA LIGAR.</div>
+                <div class="log-entry">> SISTEMA v3.4 CARREGADO.</div>
+                <div class="log-entry">> FILTRO DE RUÍDO: ATIVO (Min 10 chars).</div>
             </div>
 
-            <div class="live-preview">
+            <div class="live-preview" id="livePreviewBox">
                 <span id="interimText" style="opacity: 0.5;">...sistema desligado...</span>
             </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: #555; margin-top: 2px;">
+                <span>Pressione ENTER para enviar</span>
+                <span>Buffer: <span id="charCount">0</span>/300</span>
+            </div>
+
+            <button id="sendBtn" class="control-btn btn-send" onclick="forceSend()">📤 ENVIAR AGORA (ENTER)</button>
         </div>
 
         <div class="panel panel-output">
             <h2>
                 <span style="color: var(--neon-amber)">🧠 TECHPRO AI</span>
-                <div id="aiStatus" style="font-size: 0.7rem; color: #555;">AGUARDANDO</div>
+                <span id="aiStatus" style="font-size: 0.7rem; color: #555; margin-left: auto;">STANDBY</span>
             </h2>
 
             <div class="ai-display-area" id="aiFeed">
-                <div style="text-align: center; color: rgba(255,255,255,0.1); margin-top: 100px; font-style: italic;">
-                    O histórico de sugestões aparecerá aqui...
+                <div style="text-align: center; color: rgba(255,255,255,0.1); margin-top: 100px;">
+                    Histórico vazio...
                 </div>
             </div>
         </div>
 
-        <div class="footer">TECHPRO SYSTEM v3.2 - MISSION CONTROL</div>
+        <div class="footer">TECHPRO SYSTEM v3.4 - COM FILTRO DE RUÍDO</div>
     </div>
 
     <script>
         const WEBHOOK_URL = 'https://n8n.squirrelstore.com.br/webhook/537866eb-700d-431a-83b5-13da0dcad0aa';
+        const CHAR_LIMIT_TRIGGER = 300; 
         
+        // Elementos DOM
         const logTerminal = document.getElementById('logTerminal');
         const interimText = document.getElementById('interimText');
+        const livePreviewBox = document.getElementById('livePreviewBox');
         const aiFeed = document.getElementById('aiFeed');
         const powerBtn = document.getElementById('powerBtn');
         const aiStatus = document.getElementById('aiStatus');
+        const charCountSpan = document.getElementById('charCount');
+        const filterValueSpan = document.getElementById('filterValue');
 
-        let isSystemOn = false; // Controle mestre do sistema
+        // Estados
+        let isSystemOn = false;
         let recognition = null;
+        let currentBuffer = "";
+        let minCharFilter = 10; // Valor inicial do filtro
 
-        // --- SISTEMA DE LOGS ---
+        // LOGS
         function addLog(msg) {
             const time = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
             const div = document.createElement('div');
@@ -259,90 +231,75 @@
             logTerminal.scrollTop = logTerminal.scrollHeight;
         }
 
-        // --- LÓGICA DE CARDS E COPY ---
-        function copyToClipboard(text, btnElement) {
+        function updateFilterLabel(val) {
+            minCharFilter = parseInt(val);
+            filterValueSpan.innerText = val + " chars";
+        }
+
+        function copyToClipboard(text, btn) {
             navigator.clipboard.writeText(text).then(() => {
-                // Feedback visual no botão
-                const originalIcon = btnElement.innerHTML;
-                btnElement.innerHTML = '✅';
-                btnElement.style.borderColor = 'var(--terminal-green)';
-                btnElement.style.color = 'var(--terminal-green)';
-                
-                setTimeout(() => {
-                    btnElement.innerHTML = originalIcon;
-                    btnElement.style.borderColor = 'var(--neon-amber)';
-                    btnElement.style.color = 'var(--neon-amber)';
-                }, 2000);
+                btn.innerHTML = '✅';
+                setTimeout(() => btn.innerHTML = '📋', 2000);
             });
         }
 
         function addAICard(contexto, respostaIA) {
-            if(aiFeed.innerText.includes("O histórico")) aiFeed.innerHTML = "";
-
-            // Cria o ID único para facilitar o copy
+            if(aiFeed.innerText.includes("Histórico")) aiFeed.innerHTML = "";
             const card = document.createElement('div');
             card.className = 'ai-card';
-            
-            // Layout do Card com Botão de Copiar
             card.innerHTML = `
-                <div class="ai-context">Frase: "${contexto.substring(0, 50)}..."</div>
+                <div class="ai-context">"${contexto.substring(0, 60)}..."</div>
                 <div class="ai-text">${respostaIA}</div>
-                <button class="copy-btn" title="Copiar para área de transferência" onclick="copyToClipboard('${respostaIA.replace(/'/g, "\\'")}', this)">
-                    📋
-                </button>
+                <button class="copy-btn" onclick="copyToClipboard('${respostaIA.replace(/'/g, "\\'")}', this)">📋</button>
             `;
-            
-            aiFeed.prepend(card); 
-            aiFeed.scrollTop = 0;
+            aiFeed.prepend(card);
         }
 
-        // --- CONTROLE POWER (ON/OFF) ---
+        // --- CONTROLES ---
         function toggleSystem() {
             isSystemOn = !isSystemOn;
-
             if (isSystemOn) {
-                // LIGAR
                 powerBtn.innerHTML = "⚡ ON";
                 powerBtn.classList.add("active");
                 interimText.innerText = "...aguardando voz...";
                 interimText.style.opacity = "1";
-                addLog("SISTEMA LIGADO. INICIANDO ESCUTA...");
+                addLog("SISTEMA LIGADO.");
                 startRecognition();
             } else {
-                // DESLIGAR
                 powerBtn.innerHTML = "⛔ OFF";
                 powerBtn.classList.remove("active");
-                interimText.innerText = "...sistema desligado...";
+                interimText.innerText = "...desligado...";
                 interimText.style.opacity = "0.5";
                 addLog("SISTEMA DESLIGADO.");
                 if(recognition) recognition.stop();
             }
         }
 
-        // --- RECONHECIMENTO DE VOZ ---
+        function forceSend() {
+            if (!isSystemOn || !currentBuffer) return;
+            addLog(">> CORTE MANUAL ACIONADO <<");
+            enviarParaN8n(currentBuffer);
+            interimText.innerText = "...";
+            currentBuffer = "";
+            updateCharCount(0);
+            if(recognition) recognition.stop(); 
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && isSystemOn) forceSend();
+        });
+
+        // --- RECONHECIMENTO ---
         function startRecognition() {
-            if (!('webkitSpeechRecognition' in window)) {
-                alert("Seu navegador não suporta reconhecimento de voz. Use o Chrome.");
-                return;
-            }
+            if (!('webkitSpeechRecognition' in window)) return alert("Use Chrome.");
 
             recognition = new webkitSpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = true;
             recognition.lang = 'pt-BR';
 
-            recognition.onstart = () => {
-                addLog("Microfone ativo.");
-            };
-
             recognition.onend = () => {
-                // Só reinicia se o sistema estiver LIGADO (isSystemOn == true)
-                if (isSystemOn) {
-                    addLog("Reiniciando serviço de voz...");
-                    setTimeout(() => recognition.start(), 1000);
-                } else {
-                    addLog("Serviço de voz encerrado.");
-                }
+                if (isSystemOn) setTimeout(() => recognition.start(), 500);
             };
 
             recognition.onresult = (event) => {
@@ -352,31 +309,44 @@
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         finalTranscript = event.results[i][0].transcript.trim();
-                        interimText.innerText = "...";
                         
-                        // Só envia se tiver texto
-                        if(finalTranscript.length > 0) {
+                        // LÓGICA DO FILTRO: Só envia se for maior que o Slider
+                        if (finalTranscript.length > minCharFilter) {
                             enviarParaN8n(finalTranscript);
+                            interimText.innerText = "...";
+                            currentBuffer = "";
+                            updateCharCount(0);
+                        } else if (finalTranscript.length > 0) {
+                            addLog(`Ignorado (Curto: ${finalTranscript.length} chars): "${finalTranscript}"`);
                         }
+
                     } else {
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
                 
                 if(interimTranscript) {
+                    currentBuffer = interimTranscript;
                     interimText.innerText = interimTranscript;
-                    // Auto-scroll no input text caso seja grande
-                    interimText.parentNode.scrollTop = interimText.parentNode.scrollHeight;
+                    updateCharCount(interimTranscript.length);
+                    if(interimTranscript.length > CHAR_LIMIT_TRIGGER) {
+                        addLog("BUFFER CHEIO. ENVIANDO AUTOMATICAMENTE.");
+                        forceSend();
+                    }
                 }
             };
-
             recognition.start();
         }
 
-        // --- CONEXÃO N8N ---
+        function updateCharCount(count) {
+            charCountSpan.innerText = count;
+            if(count > CHAR_LIMIT_TRIGGER - 50) livePreviewBox.classList.add("buffer-warning");
+            else livePreviewBox.classList.remove("buffer-warning");
+            livePreviewBox.scrollTop = livePreviewBox.scrollHeight;
+        }
+
+        // --- ENVIO N8N ---
         function enviarParaN8n(texto) {
-            if(!isSystemOn) return; // Segurança extra
-            
             addLog(`Enviando: "${texto.substring(0, 15)}..."`);
             aiStatus.innerText = "PROCESSANDO...";
             aiStatus.style.color = "var(--neon-amber)";
@@ -388,21 +358,14 @@
             })
             .then(res => res.json())
             .then(data => {
-                aiStatus.innerText = "OK";
+                aiStatus.innerText = "PRONTO";
                 aiStatus.style.color = "#fff";
-                
-                if(data.comentario) {
-                    addAICard(texto, data.comentario);
-                    addLog("Sugestão recebida.");
-                } else {
-                    addAICard(texto, "⚠️ Erro no JSON do N8N.");
-                }
+                if(data.comentario) addAICard(texto, data.comentario);
             })
             .catch(err => {
                 console.error(err);
                 aiStatus.innerText = "ERRO";
                 aiStatus.style.color = "red";
-                addLog("Falha N8N.");
             });
         }
     </script>
