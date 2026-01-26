@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Audio Uplink v3.4 - TechPRO</title>
+    <title>Live Audio Uplink v3.5 - TechPRO Ultimate</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg-color: #0a0a12;
+            --bg-color: #050508;
             --neon-cyan: #00f3ff;
             --neon-pink: #ff00ff;
             --neon-amber: #ffae00;
             --neon-red: #ff3333;
             --terminal-green: #39ff14;
-            --glass-bg: rgba(20, 20, 35, 0.95);
+            --glass-bg: rgba(10, 15, 30, 0.85);
         }
 
         body {
@@ -22,16 +22,67 @@
             padding: 0;
             height: 100vh;
             background-color: var(--bg-color);
-            background-image: linear-gradient(rgba(0, 20, 0, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 20, 0, 0.2) 1px, transparent 1px);
-            background-size: 30px 30px;
+            /* Grid animado no fundo */
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), 
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
             font-family: 'Share Tech Mono', monospace;
             color: #fff;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            perspective: 1000px; /* Para o efeito 3D */
         }
 
+        /* TELA DE BOOT (INITIALIZATION) */
+        #bootOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .boot-text {
+            color: var(--neon-cyan);
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--neon-cyan);
+            width: 0%;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            animation: loadProgress 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .boot-log {
+            margin-top: 15px;
+            color: #555;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            height: 60px;
+            text-align: center;
+        }
+
+        /* CONTAINER PRINCIPAL (Começa invisível) */
         .main-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -39,20 +90,33 @@
             width: 95%;
             max-width: 1400px;
             height: 90vh;
+            opacity: 0;
+            transform: scale(0.8) translateZ(-100px); /* Vem do fundo */
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efeito elástico */
+            filter: blur(10px);
         }
 
+        /* CLASSE QUE ATIVA A ANIMAÇÃO DE ENTRADA */
+        .system-ready {
+            opacity: 1;
+            transform: scale(1) translateZ(0);
+            filter: blur(0);
+        }
+
+        /* Paineis */
         .panel {
             background: var(--glass-bg);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
             height: 100%;
             box-sizing: border-box;
             overflow: hidden;
             position: relative;
+            backdrop-filter: blur(10px);
         }
 
         .panel-input { border-left: 3px solid var(--neon-cyan); }
@@ -63,7 +127,7 @@
             margin-top: 0;
             font-size: 0.9rem;
             letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 10px;
             margin-bottom: 10px;
             display: flex;
@@ -72,29 +136,26 @@
             flex-wrap: wrap;
         }
 
-        /* SLIDER DE CALIBRAGEM */
+        /* SLIDER & CONTROLES */
         .calibration-control {
             display: flex;
             align-items: center;
             gap: 10px;
             font-size: 0.7rem;
             color: var(--neon-cyan);
-            border: 1px solid rgba(0, 243, 255, 0.3);
+            border: 1px solid rgba(0, 243, 255, 0.2);
             padding: 5px 10px;
             border-radius: 5px;
-            margin-left: auto; /* Empurra pra direita */
+            margin-left: auto;
         }
         
-        input[type=range] {
-            width: 100px;
-            accent-color: var(--neon-cyan);
-        }
+        input[type=range] { width: 80px; accent-color: var(--neon-cyan); cursor: pointer; }
 
         .control-btn {
-            background: transparent;
-            border: 1px solid #555;
-            color: #777;
-            padding: 4px 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #444;
+            color: #aaa;
+            padding: 6px 12px;
             font-family: 'Orbitron', sans-serif;
             cursor: pointer;
             border-radius: 4px;
@@ -106,106 +167,116 @@
             text-transform: uppercase;
         }
         
-        .btn-power.active { border-color: var(--terminal-green); color: var(--terminal-green); box-shadow: 0 0 10px rgba(57,255,20,0.2); }
-        .btn-send { border-color: var(--neon-cyan); color: var(--neon-cyan); width: 100%; justify-content: center; margin-top: 10px; padding: 10px;}
-        .btn-send:hover { background: rgba(0, 243, 255, 0.2); }
-        .btn-send:active { transform: scale(0.95); }
+        .control-btn:hover { background: rgba(255,255,255,0.1); border-color: #fff; color: #fff; }
+        .btn-power.active { border-color: var(--terminal-green); color: var(--terminal-green); box-shadow: 0 0 15px rgba(57,255,20,0.1); text-shadow: 0 0 5px var(--terminal-green); }
+        .btn-send { border-color: var(--neon-cyan); color: var(--neon-cyan); width: 100%; justify-content: center; margin-top: 10px; padding: 12px; letter-spacing: 1px;}
+        .btn-send:hover { background: rgba(0, 243, 255, 0.15); box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); }
 
-        /* SCROLLBARS E TERMINAL */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0a12; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        .terminal-window { flex-grow: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); padding: 10px; overflow-y: auto; font-size: 0.85rem; margin-bottom: 10px; }
-        .ai-display-area { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 5px; padding-bottom: 10px; }
+        /* SCROLLBARS */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        .terminal-window { flex-grow: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 10px; overflow-y: auto; font-size: 0.8rem; margin-bottom: 10px; }
+        .ai-display-area { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 5px; padding-bottom: 10px; }
 
+        /* CARDS */
         .ai-card {
-            background: rgba(255, 174, 0, 0.05);
+            background: linear-gradient(90deg, rgba(255, 174, 0, 0.05) 0%, transparent 100%);
             border: 1px solid var(--neon-amber);
             border-left: 4px solid var(--neon-amber);
             border-radius: 4px;
             padding: 15px; padding-right: 40px;
-            animation: slideIn 0.3s ease-out;
+            animation: cardEntrance 0.5s cubic-bezier(0.23, 1, 0.32, 1);
             position: relative; flex-shrink: 0;
         }
-        .ai-context { font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 5px; border-bottom: 1px dashed rgba(255,174,0,0.3); padding-bottom: 5px; }
-        .ai-text { font-size: 1rem; color: #fff; line-height: 1.4; }
-        .copy-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--neon-amber); color: var(--neon-amber); width: 25px; height: 25px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .ai-context { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-bottom: 5px; border-bottom: 1px dashed rgba(255,174,0,0.2); padding-bottom: 5px; font-style: italic;}
+        .ai-text { font-size: 1rem; color: #fff; line-height: 1.4; text-shadow: 0 0 2px rgba(0,0,0,0.5); }
+        .copy-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--neon-amber); color: var(--neon-amber); width: 25px; height: 25px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .copy-btn:hover { background: var(--neon-amber); color: #000; box-shadow: 0 0 10px var(--neon-amber); }
 
+        /* LIVE PREVIEW */
         .live-preview {
-            flex-shrink: 0;
-            padding: 10px;
-            background: rgba(0, 243, 255, 0.05);
-            border: 1px dashed var(--neon-cyan);
+            flex-shrink: 0; padding: 10px;
+            background: rgba(0, 243, 255, 0.02);
+            border: 1px dashed rgba(0, 243, 255, 0.3);
             color: var(--neon-cyan);
             height: 70px; max-height: 70px;
-            overflow-y: auto;
-            font-size: 0.9rem;
-            word-wrap: break-word;
-            position: relative;
+            overflow-y: auto; font-size: 0.9rem;
+            word-wrap: break-word; position: relative;
+            transition: border-color 0.3s;
         }
         
-        .buffer-warning { border-color: var(--neon-red); color: var(--neon-red); animation: pulse-red 1s infinite; }
-        .log-entry { margin-bottom: 3px; font-size: 0.75rem; opacity: 0.8; }
-        .log-timestamp { color: var(--neon-pink); margin-right: 5px; }
-        .footer { grid-column: 1 / -1; text-align: center; margin-top: 5px; font-size: 0.7rem; color: #555; }
+        .buffer-warning { border-color: var(--neon-red); color: var(--neon-red); box-shadow: inset 0 0 10px rgba(255, 50, 50, 0.1); }
+        .log-entry { margin-bottom: 4px; font-size: 0.75rem; opacity: 0.7; font-family: 'Share Tech Mono', monospace; }
+        .log-timestamp { color: var(--neon-pink); margin-right: 8px; }
+        .footer { grid-column: 1 / -1; text-align: center; margin-top: 5px; font-size: 0.65rem; color: rgba(255,255,255,0.2); letter-spacing: 2px; text-transform: uppercase;}
 
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse-red { 50% { background-color: rgba(255, 50, 50, 0.1); } }
+        @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
+        @keyframes cardEntrance { from { opacity: 0; transform: translateX(-20px) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
     </style>
 </head>
 <body>
 
-    <div class="main-grid">
+    <div id="bootOverlay">
+        <div class="boot-text">TECHPRO SYSTEMS</div>
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+        <div class="boot-log" id="bootLog">Initializing Core...</div>
+    </div>
+
+    <div class="main-grid" id="mainInterface">
         <div class="panel panel-input">
             <h2>
                 <button id="powerBtn" class="control-btn btn-power" onclick="toggleSystem()">⛔ OFF</button>
-                <span style="color: var(--neon-cyan)">INPUT</span>
+                <span style="color: var(--neon-cyan); margin-left: 5px;">AUDIO INPUT</span>
                 
                 <div class="calibration-control">
-                    <span>FILTRO:</span>
+                    <span>SENS:</span>
                     <input type="range" id="filterRange" min="0" max="50" value="10" oninput="updateFilterLabel(this.value)">
-                    <span id="filterValue">10 chars</span>
+                    <span id="filterValue">10c</span>
                 </div>
             </h2>
             
             <div class="terminal-window" id="logTerminal">
-                <div class="log-entry">> SISTEMA v3.4 CARREGADO.</div>
-                <div class="log-entry">> FILTRO DE RUÍDO: ATIVO (Min 10 chars).</div>
+                <div class="log-entry">> SISTEMA DE ÁUDIO PRONTO.</div>
+                <div class="log-entry">> WATCHDOG TIMER (ANTI-TRAVAMENTO): ATIVO 🐕.</div>
             </div>
 
             <div class="live-preview" id="livePreviewBox">
-                <span id="interimText" style="opacity: 0.5;">...sistema desligado...</span>
+                <span id="interimText" style="opacity: 0.3;">...aguardando inicialização...</span>
             </div>
             
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: #555; margin-top: 2px;">
-                <span>Pressione ENTER para enviar</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: #555; margin-top: 5px;">
+                <span>[ENTER] para enviar</span>
                 <span>Buffer: <span id="charCount">0</span>/300</span>
             </div>
 
-            <button id="sendBtn" class="control-btn btn-send" onclick="forceSend()">📤 ENVIAR AGORA (ENTER)</button>
+            <button id="sendBtn" class="control-btn btn-send" onclick="forceSend()">📤 ENVIAR PACOTE (ENTER)</button>
         </div>
 
         <div class="panel panel-output">
             <h2>
-                <span style="color: var(--neon-amber)">🧠 TECHPRO AI</span>
+                <span style="color: var(--neon-amber)">🧠 AI ANALYSIS</span>
                 <span id="aiStatus" style="font-size: 0.7rem; color: #555; margin-left: auto;">STANDBY</span>
             </h2>
 
             <div class="ai-display-area" id="aiFeed">
-                <div style="text-align: center; color: rgba(255,255,255,0.1); margin-top: 100px;">
-                    Histórico vazio...
+                <div style="text-align: center; color: rgba(255,255,255,0.05); margin-top: 100px; font-size: 3rem;">
+                    📭
                 </div>
             </div>
         </div>
 
-        <div class="footer">TECHPRO SYSTEM v3.4 - COM FILTRO DE RUÍDO</div>
+        <div class="footer">TechPRO Ultimate v3.5 • Secure Uplink Established</div>
     </div>
 
     <script>
+        // CONFIG
         const WEBHOOK_URL = 'https://n8n.squirrelstore.com.br/webhook/537866eb-700d-431a-83b5-13da0dcad0aa';
         const CHAR_LIMIT_TRIGGER = 300; 
-        
-        // Elementos DOM
+
+        // DOM
         const logTerminal = document.getElementById('logTerminal');
         const interimText = document.getElementById('interimText');
         const livePreviewBox = document.getElementById('livePreviewBox');
@@ -214,12 +285,59 @@
         const aiStatus = document.getElementById('aiStatus');
         const charCountSpan = document.getElementById('charCount');
         const filterValueSpan = document.getElementById('filterValue');
-
-        // Estados
+        
+        // ESTADOS
         let isSystemOn = false;
         let recognition = null;
         let currentBuffer = "";
-        let minCharFilter = 10; // Valor inicial do filtro
+        let minCharFilter = 10;
+        let lastActivityTime = Date.now(); // Para o Watchdog
+
+        // --- SEQUÊNCIA DE BOOT (FIRULA) ---
+        window.onload = function() {
+            const bootLog = document.getElementById('bootLog');
+            const messages = [
+                "Carregando módulos de voz...", 
+                "Conectando ao n8n Secure Server...", 
+                "Calibrando microfones...", 
+                "Inicializando TechPRO Core..."
+            ];
+            
+            let i = 0;
+            const logInterval = setInterval(() => {
+                if(i < messages.length) {
+                    bootLog.innerText = messages[i];
+                    i++;
+                }
+            }, 500);
+
+            setTimeout(() => {
+                clearInterval(logInterval);
+                document.getElementById('bootOverlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('bootOverlay').style.display = 'none';
+                    // EFEITO DE ENTRADA DO PAINEL
+                    document.getElementById('mainInterface').classList.add('system-ready');
+                }, 500);
+            }, 2500); // 2.5s de boot
+        };
+
+        // --- WATCHDOG (O Cão de Guarda Anti-Travamento) ---
+        setInterval(() => {
+            if (isSystemOn) {
+                // Se passou 5 segundos sem nenhuma atividade de reconhecimento e o sistema deveria estar ligado...
+                if (Date.now() - lastActivityTime > 5000) {
+                    // addLog("⚠️ Watchdog: Silêncio detectado. Verificando motor...");
+                    try {
+                        // Tenta reiniciar suavemente
+                        recognition.start();
+                    } catch(e) {
+                        // Se der erro é porque já está rodando, então tudo bem.
+                        // Mas se estiver "morto", o start vai reviver.
+                    }
+                }
+            }
+        }, 2000); // Verifica a cada 2 segundos
 
         // LOGS
         function addLog(msg) {
@@ -233,7 +351,7 @@
 
         function updateFilterLabel(val) {
             minCharFilter = parseInt(val);
-            filterValueSpan.innerText = val + " chars";
+            filterValueSpan.innerText = val + "c";
         }
 
         function copyToClipboard(text, btn) {
@@ -244,24 +362,25 @@
         }
 
         function addAICard(contexto, respostaIA) {
-            if(aiFeed.innerText.includes("Histórico")) aiFeed.innerHTML = "";
+            if(aiFeed.innerText.includes("📭")) aiFeed.innerHTML = "";
             const card = document.createElement('div');
             card.className = 'ai-card';
             card.innerHTML = `
-                <div class="ai-context">"${contexto.substring(0, 60)}..."</div>
+                <div class="ai-context">Contexto: "${contexto.substring(0, 50)}..."</div>
                 <div class="ai-text">${respostaIA}</div>
                 <button class="copy-btn" onclick="copyToClipboard('${respostaIA.replace(/'/g, "\\'")}', this)">📋</button>
             `;
             aiFeed.prepend(card);
         }
 
-        // --- CONTROLES ---
+        // CONTROLES
         function toggleSystem() {
             isSystemOn = !isSystemOn;
+            lastActivityTime = Date.now(); // Reset watchdog timer
             if (isSystemOn) {
                 powerBtn.innerHTML = "⚡ ON";
                 powerBtn.classList.add("active");
-                interimText.innerText = "...aguardando voz...";
+                interimText.innerText = "...escutando...";
                 interimText.style.opacity = "1";
                 addLog("SISTEMA LIGADO.");
                 startRecognition();
@@ -269,7 +388,7 @@
                 powerBtn.innerHTML = "⛔ OFF";
                 powerBtn.classList.remove("active");
                 interimText.innerText = "...desligado...";
-                interimText.style.opacity = "0.5";
+                interimText.style.opacity = "0.3";
                 addLog("SISTEMA DESLIGADO.");
                 if(recognition) recognition.stop();
             }
@@ -277,19 +396,21 @@
 
         function forceSend() {
             if (!isSystemOn || !currentBuffer) return;
-            addLog(">> CORTE MANUAL ACIONADO <<");
+            addLog(">> ENVIO FORÇADO <<");
             enviarParaN8n(currentBuffer);
             interimText.innerText = "...";
             currentBuffer = "";
             updateCharCount(0);
-            if(recognition) recognition.stop(); 
+            if(recognition) {
+                recognition.stop(); 
+            }
         }
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && isSystemOn) forceSend();
         });
 
-        // --- RECONHECIMENTO ---
+        // RECONHECIMENTO DE VOZ
         function startRecognition() {
             if (!('webkitSpeechRecognition' in window)) return alert("Use Chrome.");
 
@@ -298,28 +419,36 @@
             recognition.interimResults = true;
             recognition.lang = 'pt-BR';
 
+            // Quando inicia, avisa o Watchdog que estamos vivos
+            recognition.onstart = () => { lastActivityTime = Date.now(); };
+            
+            // Quando termina, tenta reiniciar imediatamente se estiver ligado
             recognition.onend = () => {
-                if (isSystemOn) setTimeout(() => recognition.start(), 500);
+                if (isSystemOn) {
+                    setTimeout(() => {
+                        try { recognition.start(); } catch(e){}
+                    }, 200); // Delay curto para evitar loop louco
+                }
             };
 
             recognition.onresult = (event) => {
+                // Atualiza o Watchdog: "Ei, estou ouvindo coisas, estou vivo!"
+                lastActivityTime = Date.now();
+
                 let finalTranscript = '';
                 let interimTranscript = '';
 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         finalTranscript = event.results[i][0].transcript.trim();
-                        
-                        // LÓGICA DO FILTRO: Só envia se for maior que o Slider
                         if (finalTranscript.length > minCharFilter) {
                             enviarParaN8n(finalTranscript);
                             interimText.innerText = "...";
                             currentBuffer = "";
                             updateCharCount(0);
                         } else if (finalTranscript.length > 0) {
-                            addLog(`Ignorado (Curto: ${finalTranscript.length} chars): "${finalTranscript}"`);
+                            addLog(`Filtro: Ignorado (${finalTranscript.length}c)`);
                         }
-
                     } else {
                         interimTranscript += event.results[i][0].transcript;
                     }
@@ -329,10 +458,7 @@
                     currentBuffer = interimTranscript;
                     interimText.innerText = interimTranscript;
                     updateCharCount(interimTranscript.length);
-                    if(interimTranscript.length > CHAR_LIMIT_TRIGGER) {
-                        addLog("BUFFER CHEIO. ENVIANDO AUTOMATICAMENTE.");
-                        forceSend();
-                    }
+                    if(interimTranscript.length > CHAR_LIMIT_TRIGGER) forceSend();
                 }
             };
             recognition.start();
@@ -345,10 +471,10 @@
             livePreviewBox.scrollTop = livePreviewBox.scrollHeight;
         }
 
-        // --- ENVIO N8N ---
+        // UPLINK N8N
         function enviarParaN8n(texto) {
-            addLog(`Enviando: "${texto.substring(0, 15)}..."`);
-            aiStatus.innerText = "PROCESSANDO...";
+            addLog(`Uplink: Enviando pacote...`);
+            aiStatus.innerText = "TRANSMITINDO...";
             aiStatus.style.color = "var(--neon-amber)";
 
             fetch(WEBHOOK_URL, {
@@ -358,14 +484,15 @@
             })
             .then(res => res.json())
             .then(data => {
-                aiStatus.innerText = "PRONTO";
+                aiStatus.innerText = "RECEBIDO";
                 aiStatus.style.color = "#fff";
                 if(data.comentario) addAICard(texto, data.comentario);
             })
             .catch(err => {
                 console.error(err);
-                aiStatus.innerText = "ERRO";
+                aiStatus.innerText = "FALHA";
                 aiStatus.style.color = "red";
+                addLog("Erro de Uplink.");
             });
         }
     </script>
