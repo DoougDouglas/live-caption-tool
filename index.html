@@ -5,28 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alpha Tech — Live Audio Uplink</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Josefin+Sans:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
-
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
-            --gold: #c9a84c;
-            --gold-light: #e8d08a;
-            --gold-dark: #8a6e2f;
-            --cream: #f5f0e8;
-            --deep: #07080f;
-            --deep2: #0d0f1c;
-            --panel: rgba(8, 9, 18, 0.92);
-            --border: rgba(201, 168, 76, 0.25);
-            --border-bright: rgba(201, 168, 76, 0.6);
-            --text-muted: rgba(245, 240, 232, 0.35);
-            --text-dim: rgba(245, 240, 232, 0.6);
-            --azure: #5bc8ff;
-            --danger: #ff4f4f;
+            --gold: #c9a84c; --gold-light: #e8d08a; --gold-dark: #8a6e2f;
+            --cream: #f5f0e8; --deep: #07080f; --panel: rgba(8, 9, 18, 0.92);
+            --border: rgba(201, 168, 76, 0.25); --border-bright: rgba(201, 168, 76, 0.6);
+            --text-muted: rgba(245, 240, 232, 0.35); --text-dim: rgba(245, 240, 232, 0.6);
+            --azure: #5bc8ff; --danger: #ff4f4f; --green: #39ff14;
         }
-
         body {
-            min-height: 100vh;
+            min-height: 100vh; height: 100vh;
             background-color: var(--deep);
             background-image:
                 radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.12) 0%, transparent 70%),
@@ -35,413 +24,148 @@
                 repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(201,168,76,0.04) 80px);
             font-family: 'Josefin Sans', sans-serif;
             color: var(--cream);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             overflow: hidden;
-            height: 100vh;
         }
-
-        /* ── BOOT OVERLAY ── */
-        #bootOverlay {
-            position: fixed; inset: 0; z-index: 9999;
-            background: #000;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 28px;
-        }
-        .boot-logo {
-            font-family: 'Cinzel', serif;
-            font-size: 2.2rem; font-weight: 700;
-            letter-spacing: 0.35em;
-            color: var(--gold);
-            text-transform: uppercase;
-            opacity: 0;
-            animation: fadeUp 0.8s 0.3s ease forwards;
-        }
-        .boot-subtitle {
-            font-family: 'Josefin Sans', sans-serif;
-            font-size: 0.7rem; letter-spacing: 0.4em;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            opacity: 0;
-            animation: fadeUp 0.8s 0.7s ease forwards;
-        }
-        .boot-line {
-            width: 260px; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
-            opacity: 0;
-            animation: expandLine 1s 1.1s ease forwards;
-        }
-        .boot-bar-wrap {
-            width: 260px; height: 2px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 2px; overflow: hidden;
-            opacity: 0; animation: fadeIn 0.5s 1.3s ease forwards;
-        }
-        .boot-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
-            width: 0%;
-            animation: loadFill 1.8s 1.5s cubic-bezier(0.22,1,0.36,1) forwards;
-            box-shadow: 0 0 12px var(--gold);
-        }
-        .boot-msg {
-            font-size: 0.65rem; letter-spacing: 0.25em;
-            color: var(--text-muted); text-transform: uppercase;
-            opacity: 0; animation: fadeIn 0.5s 1.5s ease forwards;
-            min-height: 1rem;
-        }
-        .boot-cross {
-            position: absolute;
-            font-family: 'Cinzel', serif;
-            font-size: 4rem; color: rgba(201,168,76,0.07);
-            letter-spacing: 0.1em; user-select: none;
-        }
-
-        /* ── DECORATIVE CORNERS ── */
-        .corner {
-            position: fixed; width: 60px; height: 60px;
-            opacity: 0.35; pointer-events: none;
-        }
+        .corner { position: fixed; width: 60px; height: 60px; opacity: 0.35; pointer-events: none; }
         .corner-tl { top: 20px; left: 20px; border-top: 1px solid var(--gold); border-left: 1px solid var(--gold); }
         .corner-tr { top: 20px; right: 20px; border-top: 1px solid var(--gold); border-right: 1px solid var(--gold); }
         .corner-bl { bottom: 20px; left: 20px; border-bottom: 1px solid var(--gold); border-left: 1px solid var(--gold); }
         .corner-br { bottom: 20px; right: 20px; border-bottom: 1px solid var(--gold); border-right: 1px solid var(--gold); }
 
-        /* ── HEADER ── */
-        .site-header {
-            text-align: center; margin-bottom: 18px;
-            opacity: 0; transform: translateY(-16px);
-            transition: all 0.9s 0.1s cubic-bezier(0.22,1,0.36,1);
-        }
+        /* BOOT */
+        #bootOverlay { position: fixed; inset: 0; z-index: 9999; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+        .boot-logo { font-family: 'Cinzel', serif; font-size: 2.2rem; font-weight: 700; letter-spacing: 0.35em; color: var(--gold); opacity: 0; animation: fadeUp 0.8s 0.3s ease forwards; }
+        .boot-subtitle { font-size: 0.68rem; letter-spacing: 0.4em; color: var(--text-muted); text-transform: uppercase; opacity: 0; animation: fadeUp 0.8s 0.7s ease forwards; }
+        .boot-line { width: 260px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; animation: expandLine 1s 1.1s ease forwards; }
+        .boot-bar-wrap { width: 260px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; opacity: 0; animation: fadeIn 0.5s 1.3s ease forwards; }
+        .boot-bar { height: 100%; background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light)); width: 0%; animation: loadFill 1.8s 1.5s cubic-bezier(0.22,1,0.36,1) forwards; box-shadow: 0 0 12px var(--gold); }
+        .boot-msg { font-size: 0.65rem; letter-spacing: 0.25em; color: var(--text-muted); text-transform: uppercase; opacity: 0; animation: fadeIn 0.5s 1.5s ease forwards; }
+
+        /* HEADER */
+        .site-header { text-align: center; margin-bottom: 14px; opacity: 0; transform: translateY(-16px); transition: all 0.9s 0.1s cubic-bezier(0.22,1,0.36,1); }
         .system-ready .site-header { opacity: 1; transform: translateY(0); }
-        .site-header h1 {
-            font-family: 'Cinzel', serif;
-            font-size: 1.5rem; font-weight: 700;
-            letter-spacing: 0.4em; text-transform: uppercase;
-            background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .site-header .tagline {
-            font-size: 0.6rem; letter-spacing: 0.45em;
-            color: var(--text-muted); text-transform: uppercase; margin-top: 4px;
-        }
-        .divider-ornament {
-            display: flex; align-items: center; gap: 10px;
-            margin: 8px auto 0; width: 320px;
-        }
-        .divider-ornament span { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--border-bright)); }
+        .site-header h1 { font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 700; letter-spacing: 0.4em; text-transform: uppercase; background: linear-gradient(135deg, var(--gold-dark), var(--gold-light), var(--gold-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .site-header .tagline { font-size: 0.58rem; letter-spacing: 0.45em; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+        .divider-ornament { display: flex; align-items: center; gap: 10px; margin: 6px auto 0; width: 300px; }
+        .divider-ornament span { flex: 1; height: 1px; }
+        .divider-ornament span:first-child { background: linear-gradient(90deg, transparent, var(--border-bright)); }
         .divider-ornament span:last-child { background: linear-gradient(90deg, var(--border-bright), transparent); }
-        .divider-ornament i {
-            font-size: 0.5rem; color: var(--gold);
-            letter-spacing: 0.3em; font-style: normal;
-        }
+        .divider-ornament i { font-size: 0.5rem; color: var(--gold); font-style: normal; }
 
-        /* ── MAIN GRID ── */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
-            width: 96%;
-            max-width: 1360px;
-            height: calc(100vh - 130px);
-            opacity: 0; transform: translateY(20px);
-            transition: all 0.9s 0.3s cubic-bezier(0.22,1,0.36,1);
-        }
-        .system-ready .main-grid { opacity: 1; transform: translateY(0); }
+        /* SETUP SCREEN */
+        #setupScreen { width: 96%; max-width: 620px; opacity: 0; transform: translateY(20px); transition: all 0.9s 0.3s cubic-bezier(0.22,1,0.36,1); }
+        .system-ready #setupScreen { opacity: 1; transform: translateY(0); }
+        .setup-panel { background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--gold); padding: 28px 32px 24px; position: relative; overflow: hidden; }
+        .setup-panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(201,168,76,0.04) 0%, transparent 60%); pointer-events: none; }
+        .setup-panel-title { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; margin-bottom: 22px; display: flex; align-items: center; gap: 10px; }
+        .setup-panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+        .field-label { font-size: 0.6rem; letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase; }
+        .field-input { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-bottom: 1px solid var(--border-bright); color: var(--cream); font-family: 'Josefin Sans', sans-serif; font-size: 0.9rem; padding: 10px 14px; outline: none; transition: border-color 0.3s, box-shadow 0.3s; width: 100%; }
+        .field-input:focus { border-color: var(--border-bright); box-shadow: 0 0 20px rgba(201,168,76,0.1); }
+        .field-input::placeholder { color: var(--text-muted); font-style: italic; }
+        .tom-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .tom-btn { background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--text-dim); font-family: 'Josefin Sans', sans-serif; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; padding: 10px 6px; cursor: pointer; transition: all 0.25s; text-align: center; }
+        .tom-btn:hover { border-color: var(--border-bright); color: var(--cream); }
+        .tom-btn.selected { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.12); }
+        .tom-icon { display: block; font-size: 1.1rem; margin-bottom: 4px; }
+        .btn-iniciar { background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04)); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.4em; text-transform: uppercase; padding: 16px; cursor: pointer; width: 100%; transition: all 0.3s; margin-top: 6px; }
+        .btn-iniciar:hover { box-shadow: 0 0 40px rgba(201,168,76,0.25); background: rgba(201,168,76,0.15); }
+        .btn-iniciar:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        /* ── PANELS ── */
-        .panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 2px;
-            display: flex; flex-direction: column;
-            padding: 20px 22px;
-            position: relative;
-            overflow: hidden;
-            height: 100%;
-            backdrop-filter: blur(20px);
-        }
-        .panel::before {
-            content: '';
-            position: absolute; inset: 0;
-            background: linear-gradient(135deg, rgba(201,168,76,0.04) 0%, transparent 50%);
-            pointer-events: none;
-        }
+        /* CULTO BAR */
+        .culto-bar { width: 96%; max-width: 1360px; display: none; align-items: center; gap: 14px; margin-bottom: 10px; padding: 8px 16px; background: rgba(201,168,76,0.04); border: 1px solid var(--border); border-left: 3px solid var(--gold); opacity: 0; transition: opacity 0.6s; }
+        .culto-bar.visible { opacity: 1; }
+        .culto-bar-tag { font-size: 0.58rem; letter-spacing: 0.28em; color: var(--gold); text-transform: uppercase; font-family: 'Cinzel', serif; }
+        .culto-bar-tema { font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.85rem; color: var(--cream); flex: 1; }
+        .badge-tom { font-size: 0.55rem; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; background: rgba(201,168,76,0.1); border: 1px solid var(--border); padding: 3px 10px; }
+        .culto-bar-info { font-size: 0.58rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
+        .btn-encerrar { background: transparent; border: 1px solid rgba(255,79,79,0.3); color: rgba(255,79,79,0.6); font-family: 'Josefin Sans', sans-serif; font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 4px 12px; cursor: pointer; transition: all 0.25s; }
+        .btn-encerrar:hover { border-color: var(--danger); color: var(--danger); }
+
+        /* MAIN GRID */
+        #mainGrid { display: none; grid-template-columns: 1fr 1fr; gap: 16px; width: 96%; max-width: 1360px; height: calc(100vh - 158px); opacity: 0; transform: translateY(16px); transition: all 0.8s cubic-bezier(0.22,1,0.36,1); }
+        #mainGrid.visible { opacity: 1; transform: translateY(0); }
+
+        /* PANELS */
+        .panel { background: var(--panel); border: 1px solid var(--border); display: flex; flex-direction: column; padding: 18px 20px; position: relative; overflow: hidden; height: 100%; backdrop-filter: blur(20px); }
+        .panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(201,168,76,0.04) 0%, transparent 50%); pointer-events: none; }
         .panel-input { border-top: 2px solid var(--gold); }
         .panel-output { border-top: 2px solid var(--azure); }
-
-        /* ── PANEL HEADER ── */
-        .panel-header {
-            display: flex; align-items: center; gap: 12px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 14px; flex-shrink: 0;
-        }
-        .panel-title {
-            font-family: 'Cinzel', serif;
-            font-size: 0.72rem; letter-spacing: 0.3em;
-            text-transform: uppercase; flex: 1;
-        }
+        .panel-header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; flex-shrink: 0; }
+        .panel-title { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; flex: 1; }
         .panel-input .panel-title { color: var(--gold); }
         .panel-output .panel-title { color: var(--azure); }
 
-        /* ── POWER BUTTON ── */
-        .btn-power {
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.12);
-            color: var(--text-muted);
-            font-family: 'Cinzel', serif;
-            font-size: 0.6rem; letter-spacing: 0.3em;
-            padding: 6px 14px; cursor: pointer;
-            border-radius: 1px;
-            text-transform: uppercase;
-            transition: all 0.3s;
-            display: flex; align-items: center; gap: 6px;
-        }
+        .btn-power { background: transparent; border: 1px solid rgba(255,255,255,0.12); color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.3em; padding: 6px 14px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
         .btn-power:hover { border-color: var(--border-bright); color: var(--cream); }
-        .btn-power.active {
-            border-color: #39ff14;
-            color: #39ff14;
-            box-shadow: 0 0 20px rgba(57,255,20,0.15), inset 0 0 20px rgba(57,255,20,0.05);
-        }
-        .pulse-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: currentColor;
-            display: inline-block;
-        }
+        .btn-power.active { border-color: var(--green); color: var(--green); box-shadow: 0 0 20px rgba(57,255,20,0.15); }
+        .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
         .btn-power.active .pulse-dot { animation: pulseDot 1.2s ease-in-out infinite; }
+        .sens-wrap { display: flex; align-items: center; gap: 8px; font-size: 0.58rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
+        input[type=range] { -webkit-appearance: none; width: 70px; height: 2px; background: var(--border); cursor: pointer; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px var(--gold); }
 
-        /* ── SENSITIVITY CONTROL ── */
-        .sens-wrap {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 0.6rem; letter-spacing: 0.2em;
-            color: var(--text-muted); text-transform: uppercase;
-        }
-        input[type=range] {
-            -webkit-appearance: none; width: 70px; height: 2px;
-            background: var(--border); cursor: pointer; border-radius: 2px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 10px; height: 10px;
-            border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px var(--gold);
-        }
+        /* CONTEXTO BOX */
+        .contexto-box { flex-shrink: 0; margin-bottom: 10px; background: rgba(201,168,76,0.03); border: 1px solid var(--border); border-left: 3px solid var(--gold-dark); padding: 8px 12px; }
+        .contexto-label { font-size: 0.55rem; letter-spacing: 0.3em; color: var(--gold-dark); text-transform: uppercase; margin-bottom: 4px; }
+        .contexto-texto { font-size: 0.72rem; color: var(--text-dim); line-height: 1.5; font-style: italic; font-family: 'Playfair Display', serif; }
 
-        /* ── LOG TERMINAL ── */
-        .log-terminal {
-            flex-shrink: 0;
-            height: 100px;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--border);
-            border-radius: 1px;
-            padding: 10px 12px;
-            overflow-y: auto;
-            margin-bottom: 12px;
-            font-size: 0.7rem;
-        }
+        .log-terminal { flex-shrink: 0; height: 76px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); padding: 8px 12px; overflow-y: auto; margin-bottom: 10px; font-size: 0.68rem; }
         .log-terminal::-webkit-scrollbar { width: 3px; }
         .log-terminal::-webkit-scrollbar-thumb { background: var(--border-bright); }
         .log-entry { margin-bottom: 3px; line-height: 1.5; }
         .log-ts { color: var(--gold); margin-right: 8px; opacity: 0.7; }
         .log-msg { color: var(--text-dim); }
 
-        /* ── LIVE PREVIEW ── */
-        .live-preview-label {
-            font-size: 0.58rem; letter-spacing: 0.3em;
-            color: var(--text-muted); text-transform: uppercase;
-            margin-bottom: 6px; flex-shrink: 0;
-        }
-        .live-preview {
-            flex-shrink: 0;
-            height: 72px;
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--gold);
-            background: rgba(201,168,76,0.03);
-            padding: 10px 14px;
-            overflow-y: auto;
-            font-size: 0.88rem;
-            line-height: 1.5;
-            color: var(--gold-light);
-            word-wrap: break-word;
-            transition: border-color 0.3s, box-shadow 0.3s;
-            margin-bottom: 8px;
-            border-radius: 0;
-            font-family: 'Playfair Display', serif;
-            font-style: italic;
-        }
-        .live-preview.buffer-warning {
-            border-color: var(--danger);
-            border-left-color: var(--danger);
-            box-shadow: inset 0 0 16px rgba(255,79,79,0.08);
-        }
-        .live-preview::-webkit-scrollbar { width: 3px; }
-        .live-preview::-webkit-scrollbar-thumb { background: var(--gold-dark); }
-
-        .buffer-meta {
-            display: flex; justify-content: space-between;
-            font-size: 0.6rem; letter-spacing: 0.18em;
-            color: var(--text-muted); text-transform: uppercase;
-            margin-bottom: 12px; flex-shrink: 0;
-        }
-
-        /* ── SEND BUTTON ── */
-        .btn-send {
-            background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.02));
-            border: 1px solid var(--border-bright);
-            color: var(--gold);
-            font-family: 'Cinzel', serif;
-            font-size: 0.65rem; letter-spacing: 0.4em;
-            padding: 14px;
-            cursor: pointer; border-radius: 1px;
-            text-transform: uppercase;
-            transition: all 0.3s;
-            width: 100%; flex-shrink: 0;
-            position: relative; overflow: hidden;
-        }
-        .btn-send::after {
-            content: '';
-            position: absolute; inset: 0;
-            background: linear-gradient(135deg, transparent 0%, rgba(201,168,76,0.08) 100%);
-            opacity: 0; transition: opacity 0.3s;
-        }
+        .live-preview-label { font-size: 0.56rem; letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; flex-shrink: 0; }
+        .live-preview { flex-shrink: 0; height: 60px; border: 1px solid var(--border); border-left: 3px solid var(--gold); background: rgba(201,168,76,0.03); padding: 8px 14px; overflow-y: auto; font-size: 0.88rem; line-height: 1.5; color: var(--gold-light); word-wrap: break-word; transition: border-color 0.3s; margin-bottom: 8px; font-family: 'Playfair Display', serif; font-style: italic; }
+        .live-preview.buffer-warning { border-color: var(--danger); border-left-color: var(--danger); }
+        .buffer-meta { display: flex; justify-content: space-between; font-size: 0.58rem; letter-spacing: 0.18em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; flex-shrink: 0; }
+        .btn-send { background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.02)); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.4em; padding: 12px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; width: 100%; flex-shrink: 0; }
         .btn-send:hover { box-shadow: 0 0 30px rgba(201,168,76,0.2); }
-        .btn-send:hover::after { opacity: 1; }
         .btn-send:disabled { opacity: 0.2; cursor: not-allowed; }
 
-        /* ── AI STATUS ── */
-        .ai-status-row {
-            display: flex; align-items: center; gap: 8px;
-        }
-        #aiStatus {
-            font-size: 0.6rem; letter-spacing: 0.25em;
-            text-transform: uppercase; color: var(--text-muted);
-        }
+        /* WAVE */
+        .wave-wrap { flex-shrink: 0; height: 28px; margin-bottom: 10px; display: flex; align-items: center; gap: 3px; }
+        .wave-bar { flex: 1; background: var(--gold); border-radius: 1px; opacity: 0.15; min-height: 3px; }
+        .system-active .wave-bar { animation: wave 0.7s ease-in-out infinite alternate; opacity: 0.6; }
 
-        /* ── AI CARDS FEED ── */
-        .ai-feed {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            padding-right: 4px;
-            padding-bottom: 6px;
-        }
+        /* AI FEED */
+        #aiStatus { font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); }
+        .ai-feed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; padding-bottom: 6px; }
         .ai-feed::-webkit-scrollbar { width: 3px; }
         .ai-feed::-webkit-scrollbar-thumb { background: rgba(91,200,255,0.3); }
-        .ai-empty {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; height: 100%;
-            color: var(--text-muted);
-            font-family: 'Cinzel', serif;
-            font-size: 0.7rem; letter-spacing: 0.3em;
-            text-transform: uppercase; gap: 14px;
-        }
-        .ai-empty .ornament {
-            font-size: 2.5rem; opacity: 0.15;
-            background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .ai-card {
-            background: linear-gradient(135deg, rgba(91,200,255,0.04) 0%, transparent 100%);
-            border: 1px solid rgba(91,200,255,0.2);
-            border-left: 3px solid var(--azure);
-            padding: 14px 38px 14px 16px;
-            border-radius: 1px;
-            position: relative; flex-shrink: 0;
-            animation: slideCard 0.5s cubic-bezier(0.23,1,0.32,1);
-        }
-        .ai-card-ctx {
-            font-size: 0.6rem; letter-spacing: 0.15em;
-            color: rgba(91,200,255,0.4);
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            font-family: 'Josefin Sans', sans-serif;
-        }
-        .ai-card-text {
-            font-size: 0.95rem;
-            color: var(--cream);
-            line-height: 1.6;
-            font-family: 'Playfair Display', serif;
-        }
-        .copy-btn {
-            position: absolute; top: 10px; right: 10px;
-            background: transparent;
-            border: 1px solid rgba(91,200,255,0.2);
-            color: rgba(91,200,255,0.5);
-            width: 24px; height: 24px;
-            border-radius: 1px; cursor: pointer;
-            font-size: 0.7rem;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
-        }
+        .ai-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; gap: 12px; }
+        .ai-empty .ornament { font-size: 2.2rem; opacity: 0.12; background: linear-gradient(135deg, var(--gold-dark), var(--gold-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .ai-card { background: linear-gradient(135deg, rgba(91,200,255,0.04) 0%, transparent 100%); border: 1px solid rgba(91,200,255,0.2); border-left: 3px solid var(--azure); padding: 12px 36px 12px 14px; position: relative; flex-shrink: 0; animation: slideCard 0.5s cubic-bezier(0.23,1,0.32,1); }
+        .ai-card-ctx { font-size: 0.58rem; letter-spacing: 0.15em; color: rgba(91,200,255,0.4); text-transform: uppercase; margin-bottom: 6px; }
+        .ai-card-text { font-size: 0.92rem; color: var(--cream); line-height: 1.6; font-family: 'Playfair Display', serif; }
+        .copy-btn { position: absolute; top: 10px; right: 10px; background: transparent; border: 1px solid rgba(91,200,255,0.2); color: rgba(91,200,255,0.5); width: 22px; height: 22px; cursor: pointer; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .copy-btn:hover { background: rgba(91,200,255,0.1); color: var(--azure); border-color: var(--azure); }
 
-        /* ── FOOTER ── */
-        .footer {
-            margin-top: 10px;
-            font-size: 0.55rem; letter-spacing: 0.4em;
-            color: var(--text-muted); text-transform: uppercase;
-            text-align: center;
-            opacity: 0; transition: opacity 1s 0.8s;
-        }
+        .footer { margin-top: 8px; font-size: 0.52rem; letter-spacing: 0.4em; color: var(--text-muted); text-transform: uppercase; text-align: center; opacity: 0; transition: opacity 1s 0.8s; }
         .system-ready .footer { opacity: 1; }
 
-        /* ── KEYFRAMES ── */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes expandLine {
-            from { opacity: 0; transform: scaleX(0); }
-            to { opacity: 1; transform: scaleX(1); }
-        }
+        @keyframes expandLine { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
         @keyframes loadFill { from { width: 0%; } to { width: 100%; } }
-        @keyframes pulseDot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.7); }
-        }
-        @keyframes slideCard {
-            from { opacity: 0; transform: translateX(-14px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        /* ── WAVEFORM VISUALIZER ── */
-        .wave-wrap {
-            flex-shrink: 0;
-            height: 36px; margin-bottom: 10px;
-            display: flex; align-items: center; gap: 3px;
-        }
-        .wave-bar {
-            flex: 1; background: var(--gold);
-            border-radius: 1px; opacity: 0.2;
-            transition: height 0.1s;
-            min-height: 3px; max-height: 36px;
-        }
-        .system-active .wave-bar { animation: wave 0.7s ease-in-out infinite alternate; opacity: 0.7; }
-        @keyframes wave {
-            from { height: 4px; }
-            to { height: var(--h); }
-        }
+        @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+        @keyframes slideCard { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes wave { from { height: 4px; } to { height: var(--h); } }
     </style>
 </head>
 <body>
 
-    <!-- DECORATIVE CORNERS -->
     <div class="corner corner-tl"></div>
     <div class="corner corner-tr"></div>
     <div class="corner corner-bl"></div>
     <div class="corner corner-br"></div>
 
-    <!-- BOOT OVERLAY -->
+    <!-- BOOT -->
     <div id="bootOverlay">
-        <div class="boot-cross">✦</div>
         <div class="boot-logo">Alpha Tech</div>
         <div class="boot-subtitle">Live Audio Uplink System</div>
         <div class="boot-line"></div>
@@ -449,26 +173,56 @@
         <div class="boot-msg" id="bootMsg">Inicializando módulos...</div>
     </div>
 
-    <!-- MAIN INTERFACE -->
+    <!-- INTERFACE -->
     <div id="mainInterface">
         <header class="site-header">
             <h1>Alpha Tech</h1>
-            <p class="tagline">Live Audio Uplink &nbsp;·&nbsp; v3.6 Stable</p>
-            <div class="divider-ornament">
-                <span></span>
-                <i>✦</i>
-                <span></span>
-            </div>
+            <p class="tagline">Live Audio Uplink &nbsp;·&nbsp; v3.7 Stable</p>
+            <div class="divider-ornament"><span></span><i>✦</i><span></span></div>
         </header>
 
-        <div class="main-grid" id="mainGrid">
+        <!-- SETUP SCREEN -->
+        <div id="setupScreen">
+            <div class="setup-panel">
+                <div class="setup-panel-title">✦ Configuração do Culto</div>
 
-            <!-- INPUT PANEL -->
+                <div class="field-group">
+                    <label class="field-label">Tema da Mensagem</label>
+                    <input type="text" id="inputTema" class="field-input" placeholder="Ex: A fé que move montanhas" />
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Versículo Base (opcional)</label>
+                    <input type="text" id="inputVersiculo" class="field-input" placeholder="Ex: Mateus 17:20" />
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Tom do Culto</label>
+                    <div class="tom-grid">
+                        <button class="tom-btn" data-tom="Evangelístico" onclick="selectTom(this)"><span class="tom-icon">🌍</span>Evangelístico</button>
+                        <button class="tom-btn" data-tom="Edificação" onclick="selectTom(this)"><span class="tom-icon">🏛️</span>Edificação</button>
+                        <button class="tom-btn" data-tom="Intercessão" onclick="selectTom(this)"><span class="tom-icon">🙏</span>Intercessão</button>
+                        <button class="tom-btn" data-tom="Adoração" onclick="selectTom(this)"><span class="tom-icon">🎶</span>Adoração</button>
+                    </div>
+                </div>
+                <button class="btn-iniciar" id="btnIniciar" onclick="iniciarCulto()" disabled>✦ &nbsp; Iniciar Culto &nbsp; ✦</button>
+            </div>
+        </div>
+
+        <!-- CULTO BAR -->
+        <div class="culto-bar" id="cultoBar">
+            <span class="culto-bar-tag">Em Andamento</span>
+            <span class="culto-bar-tema" id="barTema">—</span>
+            <span class="badge-tom" id="barTom">—</span>
+            <span class="culto-bar-info" id="barVersiculo"></span>
+            <span class="culto-bar-info">Trechos: <span id="trechoCountBar">0</span></span>
+            <button class="btn-encerrar" onclick="encerrarCulto()">Encerrar Culto</button>
+        </div>
+
+        <!-- MAIN GRID -->
+        <div id="mainGrid">
+            <!-- INPUT -->
             <div class="panel panel-input">
                 <div class="panel-header">
-                    <button id="powerBtn" class="btn-power" onclick="toggleSystem()">
-                        <span class="pulse-dot"></span> Offline
-                    </button>
+                    <button id="powerBtn" class="btn-power" onclick="toggleSystem()"><span class="pulse-dot"></span> Offline</button>
                     <span class="panel-title">✦ Entrada de Áudio</span>
                     <div class="sens-wrap">
                         <span>Sens.</span>
@@ -477,24 +231,17 @@
                     </div>
                 </div>
 
-                <!-- WAVEFORM -->
-                <div class="wave-wrap" id="waveWrap">
-                    <script>
-                        document.write(Array.from({length: 28}, (_,i) => {
-                            const h = 4 + Math.round(Math.random()*30);
-                            return `<div class="wave-bar" style="height:${h}px;--h:${4+Math.round(Math.random()*32)}px;animation-delay:${(i*0.04).toFixed(2)}s"></div>`;
-                        }).join(''));
-                    </script>
+                <div class="contexto-box">
+                    <div class="contexto-label">Contexto acumulado · <span id="trechoCount">0 trechos</span></div>
+                    <div class="contexto-texto" id="contextoTexto">Nenhum trecho enviado ainda. O contexto será construído ao longo do culto.</div>
                 </div>
 
-                <!-- LOG TERMINAL -->
+                <div class="wave-wrap" id="waveWrap"></div>
+
                 <div class="log-terminal" id="logTerminal">
-                    <div class="log-entry"><span class="log-ts">[SISTEMA]</span><span class="log-msg"> Alpha Tech v3.6 Stable iniciado.</span></div>
-                    <div class="log-entry"><span class="log-ts">[BUFFER]</span><span class="log-msg"> Limite: 600 caracteres.</span></div>
-                    <div class="log-entry"><span class="log-ts">[GUARD]</span><span class="log-msg"> Proteção anti-duplicidade ativa.</span></div>
+                    <div class="log-entry"><span class="log-ts">[SISTEMA]</span><span class="log-msg"> Alpha Tech v3.7 online.</span></div>
                 </div>
 
-                <!-- LIVE PREVIEW -->
                 <div class="live-preview-label">Transcrição em tempo real</div>
                 <div class="live-preview" id="livePreviewBox">
                     <span id="interimText" style="opacity:0.3">...aguardando inicialização...</span>
@@ -505,43 +252,31 @@
                     <span>Buffer: <span id="charCount">0</span> / 600</span>
                 </div>
 
-                <button id="sendBtn" class="btn-send" onclick="forceSend()">
-                    ✦ &nbsp; Transmitir Pacote &nbsp; ✦
-                </button>
+                <button id="sendBtn" class="btn-send" onclick="forceSend()">✦ &nbsp; Transmitir Trecho &nbsp; ✦</button>
             </div>
 
-            <!-- OUTPUT PANEL -->
+            <!-- OUTPUT -->
             <div class="panel panel-output">
                 <div class="panel-header">
-                    <span class="panel-title" style="color:var(--azure)">⬡ Análise de IA</span>
-                    <div class="ai-status-row">
-                        <span id="aiStatus">Em espera</span>
-                    </div>
+                    <span class="panel-title">⬡ Análise de IA</span>
+                    <span id="aiStatus">Em espera</span>
                 </div>
-
                 <div class="ai-feed" id="aiFeed">
-                    <div class="ai-empty">
-                        <div class="ornament">⬡</div>
-                        <span>Aguardando transmissão</span>
-                    </div>
+                    <div class="ai-empty"><div class="ornament">⬡</div><span>Aguardando transmissão</span></div>
                 </div>
             </div>
-
         </div>
 
-        <p class="footer">Alpha Tech &nbsp;·&nbsp; Live Audio Uplink v3.6 &nbsp;·&nbsp; Stable Build</p>
+        <p class="footer">Alpha Tech &nbsp;·&nbsp; Live Audio Uplink v3.7 &nbsp;·&nbsp; Stable Build</p>
     </div>
 
     <script>
         const WEBHOOK_URL = 'https://n8n.squirrelstore.com.br/webhook/537866eb-700d-431a-83b5-13da0dcad0aa';
         const CHAR_LIMIT_TRIGGER = 600;
 
-        let isSystemOn = false;
-        let recognition = null;
-        let currentBuffer = "";
-        let minCharFilter = 10;
-        let lastActivityTime = Date.now();
-        let isSendingLock = false;
+        let isSystemOn = false, recognition = null, currentBuffer = "";
+        let minCharFilter = 10, lastActivityTime = Date.now(), isSendingLock = false;
+        let cultoTema = '', cultoVersiculo = '', cultoTom = '', cultoTrechos = [];
 
         const logTerminal = document.getElementById('logTerminal');
         const interimText = document.getElementById('interimText');
@@ -552,84 +287,129 @@
         const charCountSpan = document.getElementById('charCount');
         const filterValueSpan = document.getElementById('filterValue');
         const waveWrap = document.getElementById('waveWrap');
+        const contextoTexto = document.getElementById('contextoTexto');
+        const trechoCount = document.getElementById('trechoCount');
+        const trechoCountBar = document.getElementById('trechoCountBar');
 
-        // BOOT
         window.onload = function() {
+            waveWrap.innerHTML = Array.from({length: 26}, (_,i) => {
+                const h = 4 + Math.round(Math.random()*22);
+                return `<div class="wave-bar" style="height:${h}px;--h:${4+Math.round(Math.random()*22)}px;animation-delay:${(i*0.04).toFixed(2)}s"></div>`;
+            }).join('');
             const bootMsg = document.getElementById('bootMsg');
-            const msgs = ["Carregando módulos...", "Conectando ao servidor...", "Calibrando buffer...", "Alpha Tech Online."];
+            const msgs = ["Carregando módulos...", "Conectando ao servidor...", "Calibrando sistema...", "Alpha Tech Online."];
             let i = 0;
             const iv = setInterval(() => { if(i < msgs.length) bootMsg.innerText = msgs[i++]; }, 500);
             setTimeout(() => {
                 clearInterval(iv);
-                const overlay = document.getElementById('bootOverlay');
-                overlay.style.transition = 'opacity 0.7s';
-                overlay.style.opacity = '0';
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                    document.getElementById('mainInterface').classList.add('system-ready');
-                }, 700);
+                const ol = document.getElementById('bootOverlay');
+                ol.style.transition = 'opacity 0.7s'; ol.style.opacity = '0';
+                setTimeout(() => { ol.style.display = 'none'; document.getElementById('mainInterface').classList.add('system-ready'); }, 700);
             }, 2400);
         };
 
-        // WATCHDOG
-        setInterval(() => {
-            if (isSystemOn && (Date.now() - lastActivityTime > 5000)) {
-                try { recognition.start(); } catch(e) {}
-            }
-        }, 2000);
+        document.getElementById('inputTema').addEventListener('input', function() {
+            document.getElementById('btnIniciar').disabled = !this.value.trim();
+        });
+
+        function selectTom(btn) {
+            document.querySelectorAll('.tom-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            cultoTom = btn.dataset.tom;
+        }
+
+        function iniciarCulto() {
+            cultoTema = document.getElementById('inputTema').value.trim();
+            cultoVersiculo = document.getElementById('inputVersiculo').value.trim();
+            if (!cultoTom) cultoTom = 'Geral';
+            cultoTrechos = [];
+
+            document.getElementById('barTema').innerText = cultoTema;
+            document.getElementById('barTom').innerText = cultoTom;
+            document.getElementById('barVersiculo').innerText = cultoVersiculo ? '📖 ' + cultoVersiculo : '';
+
+            const setup = document.getElementById('setupScreen');
+            setup.style.transition = 'opacity 0.4s, transform 0.4s';
+            setup.style.opacity = '0'; setup.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                setup.style.display = 'none';
+                const bar = document.getElementById('cultoBar');
+                const grid = document.getElementById('mainGrid');
+                bar.style.display = 'flex';
+                grid.style.display = 'grid';
+                setTimeout(() => { bar.classList.add('visible'); grid.classList.add('visible'); }, 50);
+                addLog(`Culto iniciado — Tema: "${cultoTema}" · Tom: ${cultoTom}`);
+                if(cultoVersiculo) addLog(`Versículo base: ${cultoVersiculo}`);
+            }, 420);
+        }
+
+        function encerrarCulto() {
+            if(!confirm('Encerrar o culto e limpar o contexto acumulado?')) return;
+            cultoTrechos = [];
+            const bar = document.getElementById('cultoBar');
+            const grid = document.getElementById('mainGrid');
+            bar.classList.remove('visible'); grid.classList.remove('visible');
+            setTimeout(() => {
+                bar.style.display = 'none'; grid.style.display = 'none';
+                const setup = document.getElementById('setupScreen');
+                setup.style.display = 'flex'; setup.style.opacity = '1'; setup.style.transform = 'translateY(0)';
+                document.getElementById('inputTema').value = '';
+                document.getElementById('inputVersiculo').value = '';
+                document.querySelectorAll('.tom-btn').forEach(b => b.classList.remove('selected'));
+                document.getElementById('btnIniciar').disabled = true;
+                cultoTom = '';
+                aiFeed.innerHTML = '<div class="ai-empty"><div class="ornament">⬡</div><span>Aguardando transmissão</span></div>';
+                atualizarContextoBox();
+                if(isSystemOn) toggleSystem();
+            }, 500);
+        }
+
+        setInterval(() => { if (isSystemOn && (Date.now() - lastActivityTime > 5000)) { try { recognition.start(); } catch(e){} } }, 2000);
 
         function addLog(msg) {
             const t = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-            const d = document.createElement('div');
-            d.className = 'log-entry';
+            const d = document.createElement('div'); d.className = 'log-entry';
             d.innerHTML = `<span class="log-ts">[${t}]</span><span class="log-msg"> ${msg}</span>`;
-            logTerminal.appendChild(d);
-            logTerminal.scrollTop = logTerminal.scrollHeight;
+            logTerminal.appendChild(d); logTerminal.scrollTop = logTerminal.scrollHeight;
         }
 
-        function updateFilterLabel(val) {
-            minCharFilter = parseInt(val);
-            filterValueSpan.innerText = val + "c";
+        function atualizarContextoBox() {
+            const n = cultoTrechos.length;
+            trechoCount.innerText = n + (n === 1 ? ' trecho' : ' trechos');
+            trechoCountBar.innerText = n;
+            if (n === 0) {
+                contextoTexto.innerText = 'Nenhum trecho enviado ainda. O contexto será construído ao longo do culto.';
+            } else {
+                const resumo = cultoTrechos.slice(-3).join(' ... ');
+                contextoTexto.innerText = '...' + resumo.substring(Math.max(0, resumo.length - 130));
+            }
         }
 
-        function copyToClipboard(txt, btn) {
-            navigator.clipboard.writeText(txt).then(() => {
-                btn.innerHTML = '✓';
-                setTimeout(() => btn.innerHTML = '⎘', 2000);
-            });
-        }
+        function updateFilterLabel(val) { minCharFilter = parseInt(val); filterValueSpan.innerText = val + "c"; }
+        function copyToClipboard(txt, btn) { navigator.clipboard.writeText(txt).then(() => { btn.innerHTML = '✓'; setTimeout(() => btn.innerHTML = '⎘', 2000); }); }
 
         function addAICard(ctx, res) {
             if (aiFeed.querySelector('.ai-empty')) aiFeed.innerHTML = '';
-            const d = document.createElement('div');
-            d.className = 'ai-card';
-            const safeRes = res.replace(/'/g, "\\'");
-            d.innerHTML = `
-                <div class="ai-card-ctx">Contexto: "${ctx.substring(0,55)}..."</div>
-                <div class="ai-card-text">${res}</div>
-                <button class="copy-btn" onclick="copyToClipboard('${safeRes}', this)" title="Copiar">⎘</button>
-            `;
+            const d = document.createElement('div'); d.className = 'ai-card';
+            const safe = res.replace(/'/g, "\\'");
+            d.innerHTML = `<div class="ai-card-ctx">Trecho ${cultoTrechos.length} &nbsp;·&nbsp; "${ctx.substring(0,50)}..."</div><div class="ai-card-text">${res}</div><button class="copy-btn" onclick="copyToClipboard('${safe}', this)">⎘</button>`;
             aiFeed.prepend(d);
         }
 
         function toggleSystem() {
-            isSystemOn = !isSystemOn;
-            lastActivityTime = Date.now();
+            isSystemOn = !isSystemOn; lastActivityTime = Date.now();
             if (isSystemOn) {
                 powerBtn.innerHTML = '<span class="pulse-dot"></span> Online';
                 powerBtn.classList.add('active');
-                interimText.innerText = '...escutando...';
-                interimText.style.opacity = '1';
+                interimText.innerText = '...escutando...'; interimText.style.opacity = '1';
                 waveWrap.classList.add('system-active');
-                addLog("Sistema ativado.");
-                startRecognition();
+                addLog("Microfone ativado."); startRecognition();
             } else {
                 powerBtn.innerHTML = '<span class="pulse-dot"></span> Offline';
                 powerBtn.classList.remove('active');
-                interimText.innerText = '...desligado...';
-                interimText.style.opacity = '0.3';
+                interimText.innerText = '...desligado...'; interimText.style.opacity = '0.3';
                 waveWrap.classList.remove('system-active');
-                addLog("Sistema desativado.");
+                addLog("Microfone desativado.");
                 if (recognition) recognition.stop();
             }
         }
@@ -638,54 +418,34 @@
             if (!isSystemOn || !currentBuffer || isSendingLock) return;
             isSendingLock = true;
             document.getElementById('sendBtn').disabled = true;
-            addLog(">> Transmissão forçada <<");
-            enviarParaN8n(currentBuffer);
-            interimText.innerText = '...';
-            currentBuffer = '';
-            updateCharCount(0);
+            const texto = currentBuffer;
+            cultoTrechos.push(texto);
+            atualizarContextoBox();
+            addLog(`Trecho ${cultoTrechos.length} transmitido.`);
+            enviarParaN8n(texto);
+            interimText.innerText = '...'; currentBuffer = ''; updateCharCount(0);
             if (recognition) recognition.stop();
-            setTimeout(() => {
-                isSendingLock = false;
-                document.getElementById('sendBtn').disabled = false;
-            }, 1500);
+            setTimeout(() => { isSendingLock = false; document.getElementById('sendBtn').disabled = false; }, 1500);
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && isSystemOn) forceSend();
-        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && isSystemOn) forceSend(); });
 
         function startRecognition() {
-            if (!('webkitSpeechRecognition' in window)) return alert("Utilize o Chrome para reconhecimento de voz.");
+            if (!('webkitSpeechRecognition' in window)) return alert("Utilize o Chrome.");
             recognition = new webkitSpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'pt-BR';
+            recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'pt-BR';
             recognition.onstart = () => { lastActivityTime = Date.now(); };
-            recognition.onend = () => {
-                if (isSystemOn) setTimeout(() => { try { recognition.start(); } catch(e) {} }, 200);
-            };
+            recognition.onend = () => { if (isSystemOn) setTimeout(() => { try { recognition.start(); } catch(e){} }, 200); };
             recognition.onresult = (e) => {
                 lastActivityTime = Date.now();
                 let finalT = '', interimT = '';
                 for (let i = e.resultIndex; i < e.results.length; ++i) {
-                    if (e.results[i].isFinal) {
-                        finalT = e.results[i][0].transcript.trim();
-                        if (finalT.length > minCharFilter) {
-                            currentBuffer = finalT;
-                            forceSend();
-                        }
-                    } else {
-                        interimT += e.results[i][0].transcript;
-                    }
+                    if (e.results[i].isFinal) { finalT = e.results[i][0].transcript.trim(); if (finalT.length > minCharFilter) { currentBuffer = finalT; forceSend(); } }
+                    else { interimT += e.results[i][0].transcript; }
                 }
                 if (interimT) {
-                    currentBuffer = interimT;
-                    interimText.innerText = interimT;
-                    updateCharCount(interimT.length);
-                    if (interimT.length > CHAR_LIMIT_TRIGGER) {
-                        addLog("Buffer cheio — disparando.");
-                        forceSend();
-                    }
+                    currentBuffer = interimT; interimText.innerText = interimT; updateCharCount(interimT.length);
+                    if (interimT.length > CHAR_LIMIT_TRIGGER) { addLog("Buffer cheio — disparando."); forceSend(); }
                 }
             };
             recognition.start();
@@ -697,24 +457,32 @@
             else livePreviewBox.classList.remove('buffer-warning');
         }
 
+        function montarPayload() {
+            return {
+                frase: cultoTrechos[cultoTrechos.length - 1],
+                contexto: {
+                    tema: cultoTema,
+                    versiculo_base: cultoVersiculo,
+                    tom: cultoTom,
+                    historico_trechos: cultoTrechos.slice(-10, -1),
+                    numero_trecho_atual: cultoTrechos.length
+                }
+            };
+        }
+
         function enviarParaN8n(texto) {
-            aiStatus.innerText = 'Transmitindo...';
-            aiStatus.style.color = 'var(--gold)';
+            aiStatus.innerText = 'Transmitindo...'; aiStatus.style.color = 'var(--gold)';
             fetch(WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ frase: texto })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(montarPayload())
             })
             .then(res => res.json())
             .then(data => {
-                aiStatus.innerText = 'Recebido';
-                aiStatus.style.color = 'var(--azure)';
+                aiStatus.innerText = 'Recebido'; aiStatus.style.color = 'var(--azure)';
                 if (data.comentario) addAICard(texto, data.comentario);
             })
             .catch(err => {
-                console.error(err);
-                aiStatus.innerText = 'Falha de Uplink';
-                aiStatus.style.color = 'var(--danger)';
+                console.error(err); aiStatus.innerText = 'Falha de Uplink'; aiStatus.style.color = 'var(--danger)';
                 addLog("Erro de conexão com o servidor.");
             });
         }
