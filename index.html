@@ -200,6 +200,8 @@
         .log-ts { color: var(--gold); margin-right: 8px; opacity: 0.7; }
         .log-msg { color: var(--text-dim); overflow-wrap: anywhere; }
         .live-preview-label { font-size: 0.56rem; letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+        .legenda-transcricao { letter-spacing: 0.14em; color: rgba(245,240,232,0.22); text-transform: none; font-style: italic; }
+        @media (max-width: 560px) { .legenda-transcricao { display: none; } }
         /* A transcrição é o que o operador realmente fica lendo durante a
            pregação. Dez linhas de altura (10 × 1.55em + respiro), rolando
            sozinha, em vez das duas linhas de antes. */
@@ -213,6 +215,10 @@
             font-family: 'Playfair Display', serif; font-style: italic;
         }
         .live-preview.buffer-warning { border-color: var(--danger); border-left-color: var(--danger); }
+        /* Confirmado: firme, é o que o contador está somando.
+           Ouvindo: apagado, porque o reconhecimento ainda pode reescrever. */
+        #textoFirmado { color: var(--gold-light); }
+        #textoOuvindo { color: rgba(245, 240, 232, 0.34); }
         /* ── MEDIDORES DE BUFFER ── */
         .buffer-meta { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; font-size: 0.56rem; letter-spacing: 0.16em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
         .buffer-meta .hint { margin-right: auto; min-width: 0; }
@@ -345,7 +351,7 @@
     <div id="mainInterface">
         <header class="site-header">
             <h1>Alpha Tech</h1>
-            <p class="tagline">Live Ministry Platform &nbsp;·&nbsp; v5.1</p>
+            <p class="tagline">Live Ministry Platform &nbsp;·&nbsp; v5.4</p>
             <div class="divider-ornament"><span></span><i>✦</i><span></span></div>
         </header>
         <!-- LOGIN SCREEN -->
@@ -436,11 +442,14 @@
                     </div>
                     <div class="wave-wrap" id="waveWrap"></div>
                     <div class="log-terminal" id="logTerminal" aria-live="polite">
-                        <div class="log-entry"><span class="log-ts">[SISTEMA]</span><span class="log-msg"> Alpha Tech v5.1 online.</span></div>
+                        <div class="log-entry"><span class="log-ts">[SISTEMA]</span><span class="log-msg"> Alpha Tech v5.4 online.</span></div>
                     </div>
-                    <div class="live-preview-label">Transcrição em tempo real</div>
+                    <div class="live-preview-label">Transcrição em tempo real <span class="legenda-transcricao">— dourado já confirmado · apagado ainda ouvindo</span></div>
                     <div class="live-preview" id="livePreviewBox">
-                        <span id="interimText" style="opacity:0.3">...aguardando inicialização...</span>
+                        <!-- Duas coisas diferentes, agora visivelmente diferentes:
+                             o que o reconhecimento já confirmou (conta para a cota)
+                             e o que ele ainda está ouvindo (pode ser reescrito). -->
+                        <span id="textoFirmado"></span><span id="textoOuvindo">...aguardando inicialização...</span>
                     </div>
                 </div>
                 <!-- Rodapé fixo: o botão de transmitir nunca sai da tela. -->
@@ -450,12 +459,12 @@
                     <div class="buffer-meta">
                         <span class="hint" id="sendHint">Ligue o microfone para transmitir</span>
                         <div class="gauges">
-                            <div class="gauge" title="Fala já captada nesta tela, ainda não transmitida">
+                            <div class="gauge" title="Conta só o texto em dourado, que o reconhecimento já confirmou. Ao chegar em 200, vai sozinho.">
                                 <span class="gauge-label">Captado</span>
                                 <div class="gauge-track"><div class="gauge-fill" id="gaugeLocal"></div></div>
                                 <span class="gauge-num" id="charCount">0/200</span>
                             </div>
-                            <div class="gauge" title="Já transmitido — aguardando a IA responder">
+                            <div class="gauge" title="Já transmitido. O servidor acumula até ter o bastante para chamar a IA.">
                                 <span class="gauge-label">Enviado</span>
                                 <div class="gauge-track"><div class="gauge-fill enviado" id="gaugeN8n"></div></div>
                                 <span class="gauge-num enviado" id="n8nCount">0/200</span>
@@ -475,7 +484,7 @@
                 </div>
             </div>
         </div>
-        <p class="footer">Alpha Tech &nbsp;·&nbsp; Live Ministry Platform v5.1</p>
+        <p class="footer">Alpha Tech &nbsp;·&nbsp; Live Ministry Platform v5.4</p>
     </div>
     <!-- MODAL COMPRA -->
     <div class="modal-overlay" id="modalCompra" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
@@ -741,7 +750,8 @@
 
         const $ = id => document.getElementById(id);
         const logTerminal     = $('logTerminal');
-        const interimText     = $('interimText');
+        const textoFirmado    = $('textoFirmado');
+        const textoOuvindo    = $('textoOuvindo');
         const livePreviewBox  = $('livePreviewBox');
         const aiFeed          = $('aiFeed');
         const powerBtn        = $('powerBtn');
@@ -809,7 +819,10 @@
                 if (!$('btnIniciar').disabled) { e.preventDefault(); iniciarCulto(); }
                 return;
             }
-            if (isSystemOn) { e.preventDefault(); forceSend('Enter'); }
+            // Enter transmite sempre que o culto está em tela. Antes exigia o
+            // microfone ligado, então se ele estivesse desligado o Enter não
+            // fazia absolutamente nada — nem avisava.
+            if (document.body.classList.contains('modo-culto')) { e.preventDefault(); forceSend('Enter'); }
         });
 
         // ═══════════════════════════════════════════════
@@ -1000,7 +1013,10 @@
                 bar.classList.add('visible'); grid.classList.add('visible');
                 addLog(`Culto iniciado — "${cultoTema}" · ${cultoTom}`);
                 if (cultoVersiculo) addLog(`Base: ${cultoVersiculo}`);
-                addLog(`Transmite ao servidor a cada ${MIN_ENVIO} caracteres captados.`);
+                // As TRÊS regras de envio automático, ditas por inteiro. Antes
+                // esta linha citava só a cota e dava a entender que era a única.
+                addLog(`Envio automático: aos ${MIN_ENVIO} caracteres confirmados, ` +
+                       `no teto de ${CHAR_LIMIT} na tela, ou após ${Math.round(FLUSH_MS/1000)}s parado.`);
                 atualizarBotaoEnvio();
             }, 420);
         }
@@ -1121,18 +1137,43 @@
         }
         function updateFilterLabel(val) { minCharFilter = parseInt(val); filterValueSpan.innerText = val + "c"; }
 
-        // Captado = o que o microfone pegou e ainda está aqui.
+        // Captado = texto JÁ CONFIRMADO pelo reconhecimento, esperando envio.
         // Enviado = o que já saiu daqui e o servidor guarda até poder chamar a IA.
+        //
+        // O medidor conta só o confirmado, porque é só ele que dispara a cota.
+        // Antes recebia confirmado + em andamento e marcava isso contra 200:
+        // chegava a mostrar "430/200" com a barra estourada e sem enviar nada,
+        // porque quem disparava era o confirmado, que ainda estava em 60.
         function atualizarMedidores(captado, enviado) {
             if (captado !== null && captado !== undefined) {
                 charCountSpan.innerText = `${captado}/${MIN_ENVIO}`;
                 gaugeLocal.style.width = Math.min(100, (captado / MIN_ENVIO) * 100) + '%';
-                livePreviewBox.classList.toggle('buffer-warning', captado > CHAR_LIMIT - 50);
             }
             if (enviado !== null && enviado !== undefined) {
                 n8nCountSpan.innerText = `${enviado}/${MIN_ENVIO}`;
                 gaugeN8n.style.width = Math.min(100, (enviado / MIN_ENVIO) * 100) + '%';
             }
+        }
+
+        // Único lugar que desenha a transcrição e os números do envio — assim
+        // eles não têm como discordar entre si.
+        function atualizarTranscricao(ouvindo) {
+            const firmado = bufferLocal.trim();
+            ouvindo = (ouvindo || '').trim();
+            textoFirmado.textContent = firmado.slice(-800) + (firmado && ouvindo ? ' ' : '');
+            textoOuvindo.textContent = ouvindo;
+            livePreviewBox.scrollTop = livePreviewBox.scrollHeight;
+            // O aviso vermelho olha o TOTAL na tela, que é o que o teto mede.
+            const total = firmado.length + (ouvindo ? ouvindo.length + 1 : 0);
+            livePreviewBox.classList.toggle('buffer-warning', total > CHAR_LIMIT - 60);
+            atualizarMedidores(firmado.length, null);
+            atualizarBotaoEnvio(ouvindo.length);
+        }
+
+        // Mensagem fixa para quando não há transcrição nenhuma na tela.
+        function avisoNaTranscricao(texto) {
+            textoFirmado.textContent = '';
+            textoOuvindo.textContent = texto;
         }
 
         // O botão diz a verdade sobre o próprio estado, em vez de aceitar o
@@ -1141,13 +1182,20 @@
         // enquanto o balde está vazio fazia ele parecer quebrado, porque a fala
         // só reabilita quando o Chrome fecha uma frase — o que demora. Se não
         // houver nada para mandar, o clique explica no log.
-        function atualizarBotaoEnvio() {
+        // O botão só fica apagado durante o próprio envio. Desabilitá-lo com o
+        // microfone desligado fazia o clique não produzir NADA — nem um aviso —
+        // e era exatamente isso que parecia "o botão não funciona".
+        function atualizarBotaoEnvio(ouvindo) {
             const n = bufferLocal.trim().length;
-            sendBtn.disabled = !isSystemOn || isSendingLock;
-            sendHint.innerText = !isSystemOn  ? 'Ligue o microfone para transmitir'
-                               : isSendingLock ? 'Enviando...'
-                               : n === 0       ? `Envia sozinho aos ${MIN_ENVIO} caracteres, ou após ${Math.round(FLUSH_MS/1000)}s de silêncio`
-                                               : `${n} de ${MIN_ENVIO} caracteres · [Enter] envia agora`;
+            const seg = Math.round(FLUSH_MS / 1000);
+            // O que está sendo ouvido aparece separado, com sinal de mais, para
+            // ficar claro que ainda não entrou na conta dos 200.
+            const extra = ouvindo > 0 ? ` · ouvindo +${ouvindo}` : '';
+            sendBtn.disabled = isSendingLock;
+            sendHint.innerText = isSendingLock ? 'Enviando...'
+                               : n > 0         ? `${n} de ${MIN_ENVIO}${extra} · [Enter] envia agora`
+                               : !isSystemOn   ? 'Ligue o microfone para começar a captar'
+                                               : `Envia sozinho aos ${MIN_ENVIO} caracteres, ou após ${seg}s parado${extra}`;
         }
 
         // ═══════════════════════════════════════════════
@@ -1223,22 +1271,25 @@
         // ÁUDIO & ENVIO
         // ═══════════════════════════════════════════════
         function toggleSystem() {
+            // micNegado só avisa; não bloqueia a tentativa. Antes ele grudava em
+            // true e o botão recusava ligar para sempre — mesmo depois de você
+            // liberar o microfone no cadeado, só voltava recarregando a página.
             if (!isSystemOn && micNegado) {
-                addLog('Microfone bloqueado. Libere o acesso no cadeado da barra de endereço.');
-                return;
+                addLog('A última tentativa foi negada. Tentando de novo — se pedir permissão, autorize.');
+                micNegado = false;
             }
             isSystemOn = !isSystemOn; lastActivityTime = Date.now();
             powerBtn.setAttribute('aria-pressed', String(isSystemOn));
             if (isSystemOn) {
                 powerBtn.innerHTML = '<span class="pulse-dot"></span> Online';
                 powerBtn.classList.add('active');
-                interimText.innerText = '...escutando...'; interimText.style.opacity = '1';
+                avisoNaTranscricao('...escutando...');
                 waveWrap.classList.add('system-active');
                 addLog("Microfone ativado."); startRecognition();
             } else {
                 powerBtn.innerHTML = '<span class="pulse-dot"></span> Offline';
                 powerBtn.classList.remove('active');
-                interimText.innerText = '...desligado...'; interimText.style.opacity = '0.3';
+                avisoNaTranscricao('...microfone desligado...');
                 waveWrap.classList.remove('system-active');
                 addLog("Microfone desativado.");
                 if (recognition) { try { recognition.stop(); } catch(e) {} }
@@ -1253,9 +1304,16 @@
 
         function forceSend(origem) {
             if (isSendingLock) return;
-            // Cada recusa diz o porquê no log, em vez de um `return` mudo.
-            if (!isSystemOn)          { addLog('Microfone desligado — ligue a captação antes de transmitir.'); return; }
-            if (!bufferLocal.trim())  { addLog('Nada captado ainda para transmitir.'); return; }
+            // Transmitir o que JÁ foi captado não depende do microfone estar
+            // ligado agora. Antes esta função exigia isSystemOn: com o
+            // microfone desligado o botão não fazia nada, nem por clique nem
+            // pelo Enter, e o texto que já estava no balde ficava preso.
+            if (!bufferLocal.trim()) {
+                addLog(isSystemOn
+                    ? 'Nada captado ainda — fale algo antes de transmitir.'
+                    : 'Nada captado. Ligue o microfone (botão OFFLINE) para começar a captar.');
+                return;
+            }
             if (!sessao || Date.now() >= sessao.expira) { sessaoExpirou(); return; }
 
             isSendingLock = true;
@@ -1271,7 +1329,7 @@
 
             const texto = bufferLocal.trim();
             bufferLocal = '';
-            interimText.innerText = '...';
+            avisoNaTranscricao('...');
             atualizarMedidores(0, null);
 
             try {
@@ -1324,10 +1382,8 @@
                         const finalT = e.results[i][0].transcript.trim();
                         if (finalT.length > minCharFilter) {
                             bufferLocal = (bufferLocal + ' ' + finalT).trim();
-                            interimText.innerText = bufferLocal.slice(-600);
-                            atualizarMedidores(bufferLocal.length, null);
-                            atualizarBotaoEnvio();
-                            addLog(`+${finalT.length} chars · captado ${bufferLocal.length}/${MIN_ENVIO}`);
+                            atualizarTranscricao(interimT);
+                            addLog(`+${finalT.length} confirmados · captado ${bufferLocal.length}/${MIN_ENVIO}`);
                             if (bufferLocal.length >= MIN_ENVIO) forceSend('cota');
                         }
                     } else {
@@ -1336,14 +1392,16 @@
                 }
 
                 if (interimT) {
-                    const previa = (bufferLocal + ' ' + interimT).trim();
-                    interimText.innerText = previa.slice(-600);
-                    atualizarMedidores(previa.length, null);
-                    // A dica também acompanha a fala em andamento — antes só
-                    // mexia quando o Chrome fechava a frase e parecia travada.
-                    sendHint.innerText = `${previa.length} de ${MIN_ENVIO} caracteres · [Enter] envia agora`;
-                    if (previa.length > CHAR_LIMIT) {
-                        addLog(`Teto de ${CHAR_LIMIT} chars — disparando.`);
+                    atualizarTranscricao(interimT);
+                    // Teto de segurança: numa fala longa que o reconhecimento
+                    // demora a fechar, o total na tela cresce sem que a cota de
+                    // 200 confirmados dispare. Só faz sentido acionar se já
+                    // existe texto confirmado — antes ele disparava com o balde
+                    // vazio e enchia o log de "nada captado", e ainda anunciava
+                    // "teto de 600" para depois enviar uns 60 caracteres.
+                    const total = bufferLocal.trim().length + interimT.trim().length + 1;
+                    if (total > CHAR_LIMIT && bufferLocal.trim()) {
+                        addLog(`Teto de ${CHAR_LIMIT} na tela — enviando os ${bufferLocal.trim().length} já confirmados.`);
                         forceSend('teto');
                     }
                 }
