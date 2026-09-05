@@ -200,7 +200,18 @@
         .log-ts { color: var(--gold); margin-right: 8px; opacity: 0.7; }
         .log-msg { color: var(--text-dim); overflow-wrap: anywhere; }
         .live-preview-label { font-size: 0.56rem; letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
-        .live-preview { height: 58px; min-height: 48px; border: 1px solid var(--border); border-left: 3px solid var(--gold); background: rgba(201,168,76,0.03); padding: 8px 14px; overflow-y: auto; font-size: 0.88rem; line-height: 1.5; color: var(--gold-light); overflow-wrap: anywhere; transition: border-color 0.3s; font-family: 'Playfair Display', serif; font-style: italic; }
+        /* A transcrição é o que o operador realmente fica lendo durante a
+           pregação. Dez linhas de altura (10 × 1.55em + respiro), rolando
+           sozinha, em vez das duas linhas de antes. */
+        .live-preview {
+            height: auto; min-height: calc(10 * 1.55em + 18px);
+            border: 1px solid var(--border); border-left: 3px solid var(--gold);
+            background: rgba(201,168,76,0.03); padding: 9px 14px;
+            overflow-y: auto; font-size: 0.88rem; line-height: 1.55;
+            color: var(--gold-light); overflow-wrap: anywhere;
+            transition: border-color 0.3s;
+            font-family: 'Playfair Display', serif; font-style: italic;
+        }
         .live-preview.buffer-warning { border-color: var(--danger); border-left-color: var(--danger); }
         /* ── MEDIDORES DE BUFFER ── */
         .buffer-meta { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; font-size: 0.56rem; letter-spacing: 0.16em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
@@ -289,9 +300,17 @@
             .footer { letter-spacing: 0.2em; }
         }
         /* Telas baixas (notebook 768p com barra de favoritos, projetor 1024x600). */
+        /* Em tela baixa a transcrição cede altura em vez de empurrar o resto
+           para fora — ela rola sozinha, o botão continua no lugar. */
+        @media (max-height: 860px) {
+            .live-preview { min-height: calc(7 * 1.55em + 18px); }
+        }
+        @media (max-height: 700px) {
+            .live-preview { min-height: calc(5 * 1.55em + 18px); }
+            .log-terminal { height: 56px; }
+        }
         @media (max-height: 700px) and (min-width: 941px) {
             .site-header { margin-bottom: 10px; }
-            .log-terminal { height: 56px; }
         }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
@@ -716,7 +735,7 @@
         let timerInterval = null;
         let cultoTema = '', cultoVersiculo = '', cultoTom = '', cultoTrechos = [];
         let isSystemOn = false, recognition = null, recognitionRodando = false, micNegado = false;
-        let minCharFilter = 10, lastActivityTime = Date.now(), isSendingLock = false;
+        let minCharFilter = 10, lastActivityTime = Date.now(), isSendingLock = false, travaEnvio = null;
         let bufferLocal = '';
         let planoSelecionado = { qtd: 1, preco: 2990 };
 
@@ -1118,13 +1137,17 @@
 
         // O botão diz a verdade sobre o próprio estado, em vez de aceitar o
         // clique e não fazer nada.
+        // Com o microfone ligado o botão fica sempre clicável. Desabilitar
+        // enquanto o balde está vazio fazia ele parecer quebrado, porque a fala
+        // só reabilita quando o Chrome fecha uma frase — o que demora. Se não
+        // houver nada para mandar, o clique explica no log.
         function atualizarBotaoEnvio() {
-            const temTexto = bufferLocal.trim().length > 0;
-            sendBtn.disabled = !(isSystemOn && temTexto && !isSendingLock);
-            sendHint.innerText = !isSystemOn ? 'Ligue o microfone para transmitir'
+            const n = bufferLocal.trim().length;
+            sendBtn.disabled = !isSystemOn || isSendingLock;
+            sendHint.innerText = !isSystemOn  ? 'Ligue o microfone para transmitir'
                                : isSendingLock ? 'Enviando...'
-                               : !temTexto    ? 'Aguardando fala para acumular'
-                                              : '[Enter] envia agora';
+                               : n === 0       ? `Envia sozinho aos ${MIN_ENVIO} caracteres, ou após ${Math.round(FLUSH_MS/1000)}s de silêncio`
+                                               : `${n} de ${MIN_ENVIO} caracteres · [Enter] envia agora`;
         }
 
         // ═══════════════════════════════════════════════
@@ -1223,9 +1246,14 @@
             atualizarBotaoEnvio();
         }
 
+        function liberarTrava() {
+            isSendingLock = false;
+            atualizarBotaoEnvio();
+        }
+
         function forceSend(origem) {
             if (isSendingLock) return;
-            // Antes era um `return` mudo para os três casos. Agora cada um diz o porquê.
+            // Cada recusa diz o porquê no log, em vez de um `return` mudo.
             if (!isSystemOn)          { addLog('Microfone desligado — ligue a captação antes de transmitir.'); return; }
             if (!bufferLocal.trim())  { addLog('Nada captado ainda para transmitir.'); return; }
             if (!sessao || Date.now() >= sessao.expira) { sessaoExpirou(); return; }
@@ -1233,18 +1261,31 @@
             isSendingLock = true;
             atualizarBotaoEnvio();
 
+            // A liberação é agendada ANTES do envio, e o envio vai dentro de um
+            // try/catch. Antes o setTimeout era a última linha da função: se
+            // qualquer coisa acima dele estourasse, ele nunca era marcado, a
+            // trava ficava presa em true e o botão morria até recarregar a
+            // página. Era esse o "aperta uma vez e quebra".
+            clearTimeout(travaEnvio);
+            travaEnvio = setTimeout(liberarTrava, 400);
+
             const texto = bufferLocal.trim();
             bufferLocal = '';
-
-            cultoTrechos.push(texto);
-            atualizarContextoBox();
-            addLog(`Trecho ${cultoTrechos.length} transmitido (${texto.length} chars${origem ? ' · ' + origem : ''}).`);
-            enviarParaServidor(texto);
-
             interimText.innerText = '...';
             atualizarMedidores(0, null);
 
-            setTimeout(() => { isSendingLock = false; atualizarBotaoEnvio(); }, 400);
+            try {
+                cultoTrechos.push(texto);
+                atualizarContextoBox();
+                addLog(`Trecho ${cultoTrechos.length} transmitido (${texto.length} chars${origem ? ' · ' + origem : ''}).`);
+                enviarParaServidor(texto);
+            } catch (e) {
+                console.error('[envio]', e);
+                addLog('Falha ao preparar o envio: ' + e.message);
+                aiStatus.innerText = 'Falha no envio'; aiStatus.style.color = 'var(--danger)';
+                clearTimeout(travaEnvio);
+                liberarTrava();      // destrava na hora, sem esperar os 400ms
+            }
         }
 
         function startRecognition() {
@@ -1283,7 +1324,7 @@
                         const finalT = e.results[i][0].transcript.trim();
                         if (finalT.length > minCharFilter) {
                             bufferLocal = (bufferLocal + ' ' + finalT).trim();
-                            interimText.innerText = bufferLocal.slice(-160);
+                            interimText.innerText = bufferLocal.slice(-600);
                             atualizarMedidores(bufferLocal.length, null);
                             atualizarBotaoEnvio();
                             addLog(`+${finalT.length} chars · captado ${bufferLocal.length}/${MIN_ENVIO}`);
@@ -1296,9 +1337,15 @@
 
                 if (interimT) {
                     const previa = (bufferLocal + ' ' + interimT).trim();
-                    interimText.innerText = previa.slice(-160);
+                    interimText.innerText = previa.slice(-600);
                     atualizarMedidores(previa.length, null);
-                    if (previa.length > CHAR_LIMIT) { addLog("Teto de 600 chars — disparando."); forceSend('teto'); }
+                    // A dica também acompanha a fala em andamento — antes só
+                    // mexia quando o Chrome fechava a frase e parecia travada.
+                    sendHint.innerText = `${previa.length} de ${MIN_ENVIO} caracteres · [Enter] envia agora`;
+                    if (previa.length > CHAR_LIMIT) {
+                        addLog(`Teto de ${CHAR_LIMIT} chars — disparando.`);
+                        forceSend('teto');
+                    }
                 }
             };
             try { recognition.start(); } catch(e) { console.warn('[mic]', e); }
