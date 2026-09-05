@@ -2,8 +2,10 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Alpha Tech — Live Ministry Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Josefin+Sans:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,40 +15,80 @@
             --border: rgba(201, 168, 76, 0.25); --border-bright: rgba(201, 168, 76, 0.6);
             --text-muted: rgba(245, 240, 232, 0.35); --text-dim: rgba(245, 240, 232, 0.6);
             --azure: #5bc8ff; --danger: #ff4f4f; --green: #39ff14;
-            --purple: #a855f7;
+            --gap: 16px;
         }
+        html { height: 100%; }
         body {
-            min-height: 100vh; height: 100vh;
+            min-height: 100vh;
+            min-height: 100dvh;
             background-color: var(--deep);
             background-image:
                 radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.12) 0%, transparent 70%),
                 radial-gradient(ellipse 40% 40% at 80% 80%, rgba(91,200,255,0.06) 0%, transparent 60%),
                 repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(201,168,76,0.04) 80px),
                 repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(201,168,76,0.04) 80px);
+            background-attachment: fixed;
             font-family: 'Josefin Sans', sans-serif;
             color: var(--cream);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            overflow: hidden;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 16px 14px;
+            overflow-x: hidden;
         }
-        .corner { position: fixed; width: 60px; height: 60px; opacity: 0.35; pointer-events: none; z-index: 1; }
+        /* Com o palco 3D ligado, a grade vem do chão em perspectiva —
+           a versão em CSS sairia por cima e brigaria com ela. */
+        body.com-palco {
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.10) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 40% at 80% 80%, rgba(91,200,255,0.05) 0%, transparent 60%);
+        }
+        /* O palco fica atrás de tudo e nunca intercepta clique. */
+        #palco {
+            position: fixed; inset: 0; z-index: 0;
+            pointer-events: none; opacity: 0;
+            transition: opacity 1.4s ease;
+        }
+        #palco.aceso { opacity: 1; }
+        /* Depois da abertura o chão recua para plano de fundo: durante o culto
+           o operador lê comentários da IA nesta tela, nada pode disputar o olho. */
+        #palco.ambiente { opacity: 0.22; }
+        #mainInterface, .corner, .modal-overlay { position: relative; z-index: 2; }
+        #mainInterface {
+            width: 100%; max-width: 1360px;
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            min-height: 0;
+        }
+        /* Centraliza com margin:auto. Se faltar espaço o conteúdo escorre e a
+           página rola — nunca é cortado, como acontecia com justify-content. */
+        .screen.active { margin: auto 0; }
+        body.modo-culto .screen.active { margin: 0; }
+        :focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+
+        .corner { position: fixed; width: 60px; height: 60px; opacity: 0.35; pointer-events: none; }
         .corner-tl { top: 20px; left: 20px; border-top: 1px solid var(--gold); border-left: 1px solid var(--gold); }
         .corner-tr { top: 20px; right: 20px; border-top: 1px solid var(--gold); border-right: 1px solid var(--gold); }
         .corner-bl { bottom: 20px; left: 20px; border-bottom: 1px solid var(--gold); border-left: 1px solid var(--gold); }
         .corner-br { bottom: 20px; right: 20px; border-bottom: 1px solid var(--gold); border-right: 1px solid var(--gold); }
         /* ── BOOT ── */
-        #bootOverlay { position: fixed; inset: 0; z-index: 9999; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; transition: opacity 0.7s; }
-        .boot-logo { font-family: 'Cinzel', serif; font-size: 2.2rem; font-weight: 700; letter-spacing: 0.35em; color: var(--gold); opacity: 0; animation: fadeUp 0.8s 0.3s ease forwards; }
+        #bootOverlay { position: fixed; inset: 0; z-index: 9999; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; transition: opacity 0.9s; padding: 20px; text-align: center; }
+        #bootOverlay.saindo { pointer-events: none; }
+        /* No modo 3D o fundo preto sai de cena para o palco aparecer, e o
+           letreiro em HTML dá lugar ao letreiro tridimensional. */
+        #bootOverlay.palco-ativo { background: transparent; justify-content: flex-end; padding-bottom: 8vh; gap: 16px; }
+        #bootOverlay.palco-ativo .boot-logo { display: none; }
+        .boot-logo { font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 6vw, 2.2rem); font-weight: 700; letter-spacing: 0.35em; color: var(--gold); opacity: 0; animation: fadeUp 0.8s 0.3s ease forwards; }
         .boot-subtitle { font-size: 0.68rem; letter-spacing: 0.4em; color: var(--text-muted); text-transform: uppercase; opacity: 0; animation: fadeUp 0.8s 0.7s ease forwards; }
-        .boot-line { width: 260px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; animation: expandLine 1s 1.1s ease forwards; }
-        .boot-bar-wrap { width: 260px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; opacity: 0; animation: fadeIn 0.5s 1.3s ease forwards; }
-        .boot-bar { height: 100%; background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light)); width: 0%; animation: loadFill 1.8s 1.5s cubic-bezier(0.22,1,0.36,1) forwards; box-shadow: 0 0 12px var(--gold); }
+        .boot-line { width: min(260px, 70vw); height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; animation: expandLine 1s 1.1s ease forwards; }
+        .boot-bar-wrap { width: min(260px, 70vw); height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; opacity: 0; animation: fadeIn 0.5s 1.3s ease forwards; }
+        .boot-bar { height: 100%; background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light)); width: 0%; box-shadow: 0 0 12px var(--gold); animation: loadFill var(--boot-dur, 1.8s) 1.5s cubic-bezier(0.22,1,0.36,1) forwards; }
         .boot-msg { font-size: 0.65rem; letter-spacing: 0.25em; color: var(--text-muted); text-transform: uppercase; opacity: 0; animation: fadeIn 0.5s 1.5s ease forwards; }
+        .boot-pular { position: fixed; bottom: 22px; right: 24px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-family: 'Josefin Sans', sans-serif; font-size: 0.55rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 7px 14px; cursor: pointer; opacity: 0; transition: all 0.3s; animation: fadeIn 0.6s 1.2s ease forwards; }
+        .boot-pular:hover { border-color: var(--border-bright); color: var(--gold); }
         /* ── HEADER ── */
-        .site-header { text-align: center; margin-bottom: 18px; opacity: 0; transform: translateY(-16px); transition: all 0.9s 0.1s cubic-bezier(0.22,1,0.36,1); }
+        .site-header { text-align: center; margin-bottom: 18px; flex-shrink: 0; opacity: 0; transform: translateY(-16px); transition: all 0.9s 0.1s cubic-bezier(0.22,1,0.36,1); }
         .system-ready .site-header { opacity: 1; transform: translateY(0); }
-        .site-header h1 { font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 700; letter-spacing: 0.4em; text-transform: uppercase; background: linear-gradient(135deg, var(--gold-dark), var(--gold-light), var(--gold-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .site-header h1 { font-family: 'Cinzel', serif; font-size: clamp(1.05rem, 3.6vw, 1.4rem); font-weight: 700; letter-spacing: 0.4em; text-transform: uppercase; background: linear-gradient(135deg, var(--gold-dark), var(--gold-light), var(--gold-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .site-header .tagline { font-size: 0.58rem; letter-spacing: 0.45em; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
-        .divider-ornament { display: flex; align-items: center; gap: 10px; margin: 6px auto 0; width: 300px; }
+        .divider-ornament { display: flex; align-items: center; gap: 10px; margin: 6px auto 0; width: min(300px, 80vw); }
         .divider-ornament span { flex: 1; height: 1px; }
         .divider-ornament span:first-child { background: linear-gradient(90deg, transparent, var(--border-bright)); }
         .divider-ornament span:last-child { background: linear-gradient(90deg, var(--border-bright), transparent); }
@@ -54,142 +96,157 @@
         /* ── SCREENS ── */
         .screen { display: none; width: 100%; flex-direction: column; align-items: center; }
         .screen.active { display: flex; }
-        /* ── LOGIN SCREEN ── */
+        /* ── LOGIN ── */
         #loginScreen { opacity: 0; transform: translateY(20px); transition: all 0.9s 0.3s cubic-bezier(0.22,1,0.36,1); }
         .system-ready #loginScreen { opacity: 1; transform: translateY(0); }
-        .login-panel { background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--gold); padding: 32px 36px 28px; width: 96%; max-width: 440px; position: relative; overflow: hidden; }
+        .login-panel { background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--gold); padding: 32px clamp(18px, 5vw, 36px) 28px; width: 100%; max-width: 440px; position: relative; overflow: hidden; }
         .login-panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(201,168,76,0.05) 0%, transparent 60%); pointer-events: none; }
-        .panel-title { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+        .panel-title { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; position: relative; }
         .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-        .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; position: relative; }
         .field-label { font-size: 0.6rem; letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase; }
-        .field-input { background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-bottom: 1px solid var(--border-bright); color: var(--cream); font-family: 'Josefin Sans', sans-serif; font-size: 0.9rem; padding: 11px 14px; outline: none; transition: all 0.3s; width: 100%; }
+        .field-input { background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-bottom: 1px solid var(--border-bright); color: var(--cream); font-family: 'Josefin Sans', sans-serif; font-size: 1rem; padding: 12px 14px; outline: none; transition: border-color 0.3s, box-shadow 0.3s; width: 100%; }
         .field-input:focus { border-color: var(--border-bright); box-shadow: 0 0 20px rgba(201,168,76,0.1); }
         .field-input::placeholder { color: var(--text-muted); font-style: italic; }
-        .btn-primary { background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05)); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.4em; padding: 14px; cursor: pointer; width: 100%; transition: all 0.3s; text-transform: uppercase; margin-top: 8px; position: relative; overflow: hidden; }
-        .btn-primary:hover { box-shadow: 0 0 40px rgba(201,168,76,0.25); background: rgba(201,168,76,0.2); }
+        .btn-primary { background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05)); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.4em; padding: 15px; cursor: pointer; width: 100%; transition: all 0.3s; text-transform: uppercase; margin-top: 8px; position: relative; overflow: hidden; }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 0 40px rgba(201,168,76,0.25); background: rgba(201,168,76,0.2); }
         .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
         .btn-primary.loading::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent); animation: shimmer 1.2s infinite; }
-        .login-error { font-size: 0.65rem; letter-spacing: 0.2em; color: var(--danger); text-transform: uppercase; margin-top: 10px; text-align: center; min-height: 20px; }
+        .login-error { font-size: 0.65rem; letter-spacing: 0.2em; color: var(--danger); text-transform: uppercase; margin-top: 10px; text-align: center; min-height: 20px; line-height: 1.5; }
         .login-footer { margin-top: 20px; text-align: center; font-size: 0.6rem; letter-spacing: 0.2em; color: var(--text-muted); }
-        .link-comprar { color: var(--gold); cursor: pointer; text-decoration: none; transition: opacity 0.2s; }
+        .link-comprar { background: none; border: none; font: inherit; color: var(--gold); cursor: pointer; transition: opacity 0.2s; padding: 4px; letter-spacing: inherit; }
         .link-comprar:hover { opacity: 0.7; }
-        /* ── SESSION BAR ── */
-        #sessionBar {
-            width: 96%; max-width: 1360px;
-            display: none; align-items: center; gap: 16px;
-            padding: 8px 16px; margin-bottom: 10px;
+        /* ── BARRAS ── */
+        #sessionBar, .culto-bar {
+            width: 100%; display: none; align-items: center;
+            gap: 10px 16px; flex-wrap: wrap;
+            padding: 8px 16px; margin-bottom: 10px; flex-shrink: 0;
             background: rgba(201,168,76,0.04);
             border: 1px solid var(--border); border-left: 3px solid var(--gold);
-            opacity: 0; transition: opacity 0.6s;
+            opacity: 0; transition: opacity 0.6s; backdrop-filter: blur(8px);
         }
-        #sessionBar.visible { opacity: 1; }
-        .session-user { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.25em; color: var(--gold); text-transform: uppercase; }
+        #sessionBar.visible, .culto-bar.visible { opacity: 1; }
+        .session-user { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.25em; color: var(--gold); text-transform: uppercase; overflow-wrap: anywhere; }
         .session-credits { display: flex; align-items: center; gap: 6px; font-size: 0.58rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
         .credit-badge { background: rgba(201,168,76,0.12); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.65rem; padding: 2px 10px; letter-spacing: 0.2em; }
-        /* COUNTDOWN */
         .session-timer { display: flex; align-items: center; gap: 8px; margin-left: auto; }
         .timer-label { font-size: 0.55rem; letter-spacing: 0.25em; color: var(--text-muted); text-transform: uppercase; }
-        .timer-display { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); letter-spacing: 0.1em; min-width: 72px; text-align: center; }
+        .timer-display { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); letter-spacing: 0.1em; min-width: 72px; text-align: center; font-variant-numeric: tabular-nums; }
         .timer-display.warning { color: var(--danger); animation: timerPulse 1s ease-in-out infinite; }
         .timer-bar-wrap { width: 120px; height: 2px; background: var(--border); }
         .timer-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dark), var(--gold)); transition: width 1s linear; }
         .timer-bar-fill.warning { background: var(--danger); }
-        .btn-logout { background: transparent; border: 1px solid rgba(255,79,79,0.25); color: rgba(255,79,79,0.5); font-family: 'Josefin Sans', sans-serif; font-size: 0.52rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 4px 10px; cursor: pointer; transition: all 0.25s; }
-        .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
-        .btn-comprar-mais { background: transparent; border: 1px solid rgba(201,168,76,0.3); color: rgba(201,168,76,0.6); font-family: 'Josefin Sans', sans-serif; font-size: 0.52rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 4px 10px; cursor: pointer; transition: all 0.25s; }
+        .btn-logout, .btn-comprar-mais, .btn-encerrar {
+            background: transparent; font-family: 'Josefin Sans', sans-serif;
+            font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase;
+            padding: 7px 12px; cursor: pointer; transition: all 0.25s; white-space: nowrap;
+        }
+        .btn-logout, .btn-encerrar { border: 1px solid rgba(255,79,79,0.28); color: rgba(255,79,79,0.55); }
+        .btn-logout:hover, .btn-encerrar:hover { border-color: var(--danger); color: var(--danger); }
+        .btn-comprar-mais { border: 1px solid rgba(201,168,76,0.3); color: rgba(201,168,76,0.6); }
         .btn-comprar-mais:hover { border-color: var(--border-bright); color: var(--gold); }
-        /* ── CULTO BAR ── */
-        .culto-bar { width: 96%; max-width: 1360px; display: none; align-items: center; gap: 14px; margin-bottom: 10px; padding: 8px 16px; background: rgba(201,168,76,0.04); border: 1px solid var(--border); border-left: 3px solid var(--gold); opacity: 0; transition: opacity 0.6s; }
-        .culto-bar.visible { opacity: 1; }
-        .culto-bar-tag { font-size: 0.58rem; letter-spacing: 0.28em; color: var(--gold); text-transform: uppercase; font-family: 'Cinzel', serif; }
-        .culto-bar-tema { font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.85rem; color: var(--cream); flex: 1; }
-        .badge-tom { font-size: 0.55rem; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; background: rgba(201,168,76,0.1); border: 1px solid var(--border); padding: 3px 10px; }
-        .culto-bar-info { font-size: 0.58rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
-        .btn-encerrar { background: transparent; border: 1px solid rgba(255,79,79,0.3); color: rgba(255,79,79,0.6); font-family: 'Josefin Sans', sans-serif; font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 4px 12px; cursor: pointer; transition: all 0.25s; }
-        .btn-encerrar:hover { border-color: var(--danger); color: var(--danger); }
-        /* ── SETUP SCREEN ── */
-        #setupScreen { width: 96%; max-width: 620px; opacity: 0; transform: translateY(20px); transition: all 0.7s cubic-bezier(0.22,1,0.36,1); }
+        .culto-bar-tag { font-size: 0.58rem; letter-spacing: 0.28em; color: var(--gold); text-transform: uppercase; font-family: 'Cinzel', serif; white-space: nowrap; }
+        .culto-bar-tema { font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.85rem; color: var(--cream); flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; }
+        .badge-tom { font-size: 0.55rem; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; background: rgba(201,168,76,0.1); border: 1px solid var(--border); padding: 3px 10px; white-space: nowrap; }
+        .culto-bar-info { font-size: 0.58rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; white-space: nowrap; }
+        /* ── SETUP ── */
+        #setupScreen { width: 100%; max-width: 620px; opacity: 0; transform: translateY(20px); transition: all 0.7s cubic-bezier(0.22,1,0.36,1); }
         #setupScreen.entering { opacity: 1; transform: translateY(0); }
-        .setup-panel { background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--gold); padding: 28px 32px 24px; position: relative; overflow: hidden; }
+        .setup-panel { background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--gold); padding: 28px clamp(18px, 5vw, 32px) 24px; position: relative; overflow: hidden; width: 100%; }
         .setup-panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(201,168,76,0.04) 0%, transparent 60%); pointer-events: none; }
-        .tom-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .tom-btn { background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--text-dim); font-family: 'Josefin Sans', sans-serif; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; padding: 10px 6px; cursor: pointer; transition: all 0.25s; text-align: center; }
+        .tom-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+        .tom-btn { background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--text-dim); font-family: 'Josefin Sans', sans-serif; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; padding: 12px 6px; cursor: pointer; transition: all 0.25s; text-align: center; }
         .tom-btn:hover { border-color: var(--border-bright); color: var(--cream); }
         .tom-btn.selected { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.12); }
         .tom-icon { display: block; font-size: 1.1rem; margin-bottom: 4px; }
         .btn-iniciar { background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04)); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.4em; text-transform: uppercase; padding: 16px; cursor: pointer; width: 100%; transition: all 0.3s; margin-top: 6px; }
-        .btn-iniciar:hover { box-shadow: 0 0 40px rgba(201,168,76,0.25); }
+        .btn-iniciar:hover:not(:disabled) { box-shadow: 0 0 40px rgba(201,168,76,0.25); }
         .btn-iniciar:disabled { opacity: 0.3; cursor: not-allowed; }
-        /* ── MAIN GRID ── */
-        #mainGrid { display: none; grid-template-columns: 1fr 1fr; gap: 16px; width: 96%; max-width: 1360px; opacity: 0; transform: translateY(16px); transition: all 0.8s cubic-bezier(0.22,1,0.36,1); }
+        .setup-hint { font-size: 0.55rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; text-align: center; margin-top: 10px; min-height: 14px; }
+        /* ── GRID ── */
+        /* minmax(0, 1fr): com "1fr" puro a coluna nunca encolhe abaixo do conteúdo
+           e o grid estourava para 611px dentro de uma tela de 375px. */
+        #mainGrid {
+            display: none;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--gap); width: 100%;
+            flex: 1; min-height: 0;
+            opacity: 0; transform: translateY(16px);
+            transition: opacity 0.8s cubic-bezier(0.22,1,0.36,1), transform 0.8s cubic-bezier(0.22,1,0.36,1);
+        }
         #mainGrid.visible { opacity: 1; transform: translateY(0); }
-        /* ── PANELS ── */
-        .panel { background: var(--panel); border: 1px solid var(--border); display: flex; flex-direction: column; padding: 18px 20px; position: relative; overflow: hidden; backdrop-filter: blur(20px); }
+        .panel { background: var(--panel); border: 1px solid var(--border); display: flex; flex-direction: column; padding: 18px 20px; position: relative; overflow: hidden; min-height: 0; min-width: 0; backdrop-filter: blur(20px); }
         .panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(201,168,76,0.04) 0%, transparent 50%); pointer-events: none; }
         .panel-input { border-top: 2px solid var(--gold); }
         .panel-output { border-top: 2px solid var(--azure); }
-        .panel-header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; flex-shrink: 0; }
-        .panel-header-title { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; flex: 1; }
+        .panel-header { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; flex-shrink: 0; position: relative; }
+        .panel-header-title { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; flex: 1 1 auto; min-width: 0; }
         .panel-input .panel-header-title { color: var(--gold); }
         .panel-output .panel-header-title { color: var(--azure); }
-        .btn-power { background: transparent; border: 1px solid rgba(255,255,255,0.12); color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.3em; padding: 6px 14px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        /* Miolo rolável + rodapé fixo: o botão de transmitir nunca é cortado. */
+        .panel-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; padding-right: 2px; }
+        .panel-foot { flex-shrink: 0; padding-top: 10px; position: relative; }
+        .panel-body::-webkit-scrollbar, .ai-feed::-webkit-scrollbar, .log-terminal::-webkit-scrollbar, .live-preview::-webkit-scrollbar { width: 3px; }
+        .panel-body::-webkit-scrollbar-thumb, .log-terminal::-webkit-scrollbar-thumb, .live-preview::-webkit-scrollbar-thumb { background: var(--border-bright); }
+        .ai-feed::-webkit-scrollbar-thumb { background: rgba(91,200,255,0.3); }
+        .btn-power { background: transparent; border: 1px solid rgba(255,255,255,0.12); color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.3em; padding: 8px 14px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
         .btn-power.active { border-color: var(--green); color: var(--green); box-shadow: 0 0 20px rgba(57,255,20,0.15); }
-        .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
+        .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; flex-shrink: 0; }
         .btn-power.active .pulse-dot { animation: pulseDot 1.2s ease-in-out infinite; }
         .sens-wrap { display: flex; align-items: center; gap: 8px; font-size: 0.58rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
-        input[type=range] { -webkit-appearance: none; width: 70px; height: 2px; background: var(--border); cursor: pointer; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px var(--gold); }
-        .contexto-box { flex-shrink: 0; margin-bottom: 10px; background: rgba(201,168,76,0.03); border: 1px solid var(--border); border-left: 3px solid var(--gold-dark); padding: 8px 12px; }
+        input[type=range] { -webkit-appearance: none; appearance: none; width: 70px; height: 2px; background: var(--border); cursor: pointer; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+        input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border: none; border-radius: 50%; background: var(--gold); }
+        .contexto-box { margin-bottom: 10px; background: rgba(201,168,76,0.03); border: 1px solid var(--border); border-left: 3px solid var(--gold-dark); padding: 8px 12px; }
         .contexto-label { font-size: 0.55rem; letter-spacing: 0.3em; color: var(--gold-dark); text-transform: uppercase; margin-bottom: 4px; }
-        .contexto-texto { font-size: 0.72rem; color: var(--text-dim); line-height: 1.5; font-style: italic; font-family: 'Playfair Display', serif; }
-        .log-terminal { flex-shrink: 0; height: 72px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); padding: 8px 12px; overflow-y: auto; margin-bottom: 10px; font-size: 0.68rem; }
-        .log-terminal::-webkit-scrollbar { width: 3px; }
-        .log-terminal::-webkit-scrollbar-thumb { background: var(--border-bright); }
+        .contexto-texto { font-size: 0.72rem; color: var(--text-dim); line-height: 1.5; font-style: italic; font-family: 'Playfair Display', serif; overflow-wrap: anywhere; }
+        .log-terminal { height: 72px; min-height: 56px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); padding: 8px 12px; overflow-y: auto; margin-bottom: 10px; font-size: 0.68rem; }
         .log-entry { margin-bottom: 3px; line-height: 1.5; }
         .log-ts { color: var(--gold); margin-right: 8px; opacity: 0.7; }
-        .log-msg { color: var(--text-dim); }
-        .live-preview-label { font-size: 0.56rem; letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; flex-shrink: 0; }
-        .live-preview { flex-shrink: 0; height: 58px; border: 1px solid var(--border); border-left: 3px solid var(--gold); background: rgba(201,168,76,0.03); padding: 8px 14px; overflow-y: auto; font-size: 0.88rem; line-height: 1.5; color: var(--gold-light); word-wrap: break-word; transition: border-color 0.3s; margin-bottom: 8px; font-family: 'Playfair Display', serif; font-style: italic; }
+        .log-msg { color: var(--text-dim); overflow-wrap: anywhere; }
+        .live-preview-label { font-size: 0.56rem; letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+        .live-preview { height: 58px; min-height: 48px; border: 1px solid var(--border); border-left: 3px solid var(--gold); background: rgba(201,168,76,0.03); padding: 8px 14px; overflow-y: auto; font-size: 0.88rem; line-height: 1.5; color: var(--gold-light); overflow-wrap: anywhere; transition: border-color 0.3s; font-family: 'Playfair Display', serif; font-style: italic; }
         .live-preview.buffer-warning { border-color: var(--danger); border-left-color: var(--danger); }
-        /* ── MEDIDORES DE BUFFER ── */
-        .buffer-meta { display: flex; align-items: center; gap: 12px; font-size: 0.56rem; letter-spacing: 0.16em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; flex-shrink: 0; }
-        .buffer-meta .hint { margin-right: auto; }
-        .gauge { display: flex; align-items: center; gap: 6px; }
+        /* ── MEDIDORES ── */
+        .buffer-meta { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; font-size: 0.56rem; letter-spacing: 0.16em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+        .buffer-meta .hint { margin-right: auto; min-width: 0; }
+        /* Os dois medidores contam uma coisa só — quebram juntos ou não quebram. */
+        .gauges { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+        .gauge { display: flex; align-items: center; gap: 6px; cursor: help; }
         .gauge-label { color: var(--text-muted); }
-        .gauge-track { width: 62px; height: 3px; background: var(--border); position: relative; }
+        .gauge-track { width: 62px; height: 3px; background: var(--border); }
         .gauge-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold-dark), var(--gold)); transition: width 0.25s; }
-        .gauge-fill.n8n { background: linear-gradient(90deg, rgba(91,200,255,0.5), var(--azure)); }
-        .gauge-num { font-family: 'Cinzel', serif; font-size: 0.6rem; color: var(--gold); min-width: 46px; text-align: right; }
-        .gauge-num.n8n { color: var(--azure); }
-        .btn-send { background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.02)); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.4em; padding: 12px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; width: 100%; flex-shrink: 0; }
-        .btn-send:hover { box-shadow: 0 0 30px rgba(201,168,76,0.2); }
-        .btn-send:disabled { opacity: 0.2; cursor: not-allowed; }
-        .wave-wrap { flex-shrink: 0; height: 26px; margin-bottom: 10px; display: flex; align-items: center; gap: 3px; }
+        .gauge-fill.enviado { background: linear-gradient(90deg, rgba(91,200,255,0.5), var(--azure)); }
+        .gauge-num { font-family: 'Cinzel', serif; font-size: 0.6rem; color: var(--gold); min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+        .gauge-num.enviado { color: var(--azure); }
+        .btn-send { background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.02)); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.4em; padding: 14px 12px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; width: 100%; }
+        .btn-send:hover:not(:disabled) { box-shadow: 0 0 30px rgba(201,168,76,0.2); }
+        .btn-send:disabled { opacity: 0.28; cursor: not-allowed; }
+        .wave-wrap { height: 26px; margin-bottom: 10px; display: flex; align-items: center; gap: 3px; }
         .wave-bar { flex: 1; background: var(--gold); border-radius: 1px; opacity: 0.15; min-height: 3px; }
         .system-active .wave-bar { animation: wave 0.7s ease-in-out infinite alternate; opacity: 0.6; }
-        #aiStatus { font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); }
-        .ai-feed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; padding-bottom: 6px; }
-        .ai-feed::-webkit-scrollbar { width: 3px; }
-        .ai-feed::-webkit-scrollbar-thumb { background: rgba(91,200,255,0.3); }
-        .ai-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; gap: 12px; }
+        #aiStatus { font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+        .ai-feed { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; padding-bottom: 6px; }
+        .ai-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 140px; color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; gap: 12px; text-align: center; }
         .ai-empty .ornament { font-size: 2.2rem; opacity: 0.12; background: linear-gradient(135deg, var(--gold-dark), var(--gold-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .ai-card { background: linear-gradient(135deg, rgba(91,200,255,0.04) 0%, transparent 100%); border: 1px solid rgba(91,200,255,0.2); border-left: 3px solid var(--azure); padding: 12px 36px 12px 14px; position: relative; flex-shrink: 0; animation: slideCard 0.5s cubic-bezier(0.23,1,0.32,1); }
+        .ai-card { background: linear-gradient(135deg, rgba(91,200,255,0.04) 0%, transparent 100%); border: 1px solid rgba(91,200,255,0.2); border-left: 3px solid var(--azure); padding: 12px 46px 12px 14px; position: relative; flex-shrink: 0; animation: slideCard 0.5s cubic-bezier(0.23,1,0.32,1); }
         .ai-card.reserva { border-color: rgba(201,168,76,0.3); border-left-color: var(--gold); background: linear-gradient(135deg, rgba(201,168,76,0.05) 0%, transparent 100%); }
-        .ai-card-ctx { font-size: 0.58rem; letter-spacing: 0.15em; color: rgba(91,200,255,0.4); text-transform: uppercase; margin-bottom: 6px; }
+        .ai-card-ctx { font-size: 0.58rem; letter-spacing: 0.15em; color: rgba(91,200,255,0.4); text-transform: uppercase; margin-bottom: 6px; overflow-wrap: anywhere; }
         .ai-card.reserva .ai-card-ctx { color: rgba(201,168,76,0.5); }
-        .ai-card-text { font-size: 0.92rem; color: var(--cream); line-height: 1.6; font-family: 'Playfair Display', serif; }
-        .copy-btn { position: absolute; top: 10px; right: 10px; background: transparent; border: 1px solid rgba(91,200,255,0.2); color: rgba(91,200,255,0.5); width: 22px; height: 22px; cursor: pointer; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .ai-card-text { font-size: 0.92rem; color: var(--cream); line-height: 1.6; font-family: 'Playfair Display', serif; overflow-wrap: anywhere; }
+        .copy-btn { position: absolute; top: 10px; right: 10px; background: transparent; border: 1px solid rgba(91,200,255,0.2); color: rgba(91,200,255,0.5); width: 28px; height: 28px; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .copy-btn:hover { background: rgba(91,200,255,0.1); color: var(--azure); border-color: var(--azure); }
-        /* ── MODAL COMPRA ── */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .copy-btn.ok { color: var(--green); border-color: var(--green); }
+        .copy-btn.falhou { color: var(--danger); border-color: var(--danger); }
+        /* ── MODAL ── */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 16px; overflow-y: auto; }
         .modal-overlay.open { display: flex; }
-        .modal { background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--gold); width: 96%; max-width: 500px; padding: 32px; position: relative; animation: slideCard 0.4s cubic-bezier(0.23,1,0.32,1); }
-        .modal-close { position: absolute; top: 16px; right: 16px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); width: 28px; height: 28px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .modal { background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--gold); width: 100%; max-width: 500px; padding: clamp(20px, 5vw, 32px); position: relative; margin: auto; animation: slideCard 0.4s cubic-bezier(0.23,1,0.32,1); }
+        .modal-close { position: absolute; top: 12px; right: 12px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); width: 32px; height: 32px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .modal-close:hover { border-color: var(--border-bright); color: var(--cream); }
-        .modal-title { font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; margin-bottom: 20px; }
-        .planos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .plano-card { background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 16px 10px; text-align: center; cursor: pointer; transition: all 0.25s; }
+        .modal-title { font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; margin-bottom: 20px; padding-right: 40px; }
+        .planos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .plano-card { background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 16px 10px; text-align: center; cursor: pointer; transition: all 0.25s; font: inherit; color: inherit; }
         .plano-card:hover { border-color: var(--border-bright); }
         .plano-card.selected { border-color: var(--gold); background: rgba(201,168,76,0.08); }
         .plano-qtd { font-family: 'Cinzel', serif; font-size: 1.4rem; color: var(--gold); }
@@ -198,15 +255,48 @@
         .plano-preco span { font-size: 0.55rem; color: var(--text-muted); }
         .modal-info { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.15em; margin-bottom: 16px; line-height: 1.6; }
         .modal-info strong { color: var(--gold-light); }
-        .btn-checkout { background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05)); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.4em; padding: 14px; cursor: pointer; width: 100%; transition: all 0.3s; text-transform: uppercase; }
-        .btn-checkout:hover { box-shadow: 0 0 40px rgba(201,168,76,0.25); }
+        .btn-checkout { background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05)); border: 1px solid var(--border-bright); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.4em; padding: 15px; cursor: pointer; width: 100%; transition: all 0.3s; text-transform: uppercase; }
+        .btn-checkout:hover:not(:disabled) { box-shadow: 0 0 40px rgba(201,168,76,0.25); }
         .btn-checkout:disabled { opacity: 0.3; cursor: not-allowed; }
-        .asaas-note { margin-top: 12px; text-align: center; font-size: 0.55rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
-        /* HEIGHT DINÂMICA */
-        #mainGrid { height: calc(100vh - 180px); }
-        .footer { margin-top: 8px; font-size: 0.52rem; letter-spacing: 0.4em; color: var(--text-muted); text-transform: uppercase; text-align: center; opacity: 0; transition: opacity 1s 0.8s; }
+        .asaas-note { margin-top: 12px; text-align: center; font-size: 0.55rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; line-height: 1.6; }
+        .link-fallback { display: none; margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-bright); background: rgba(201,168,76,0.06); font-size: 0.7rem; text-align: center; overflow-wrap: anywhere; }
+        .link-fallback.visivel { display: block; }
+        .link-fallback a { color: var(--gold-light); }
+        .footer { margin-top: 10px; font-size: 0.52rem; letter-spacing: 0.4em; color: var(--text-muted); text-transform: uppercase; text-align: center; flex-shrink: 0; opacity: 0; transition: opacity 1s 0.8s; }
         .system-ready .footer { opacity: 1; }
-        /* ── KEYFRAMES ── */
+        /* ═══ RESPONSIVO ═══ */
+        @media (max-width: 940px) {
+            #mainGrid { grid-template-columns: minmax(0, 1fr); flex: 0 0 auto; }
+            .panel { min-height: 340px; }
+            .panel-output { min-height: 300px; }
+            body.modo-culto .screen.active { margin: 0; }
+        }
+        @media (max-width: 720px) {
+            :root { --gap: 12px; }
+            body { padding: 12px 10px; }
+            .corner { width: 34px; height: 34px; opacity: 0.2; }
+            .corner-tl, .corner-tr { top: 8px; } .corner-bl, .corner-br { bottom: 8px; }
+            .corner-tl, .corner-bl { left: 8px; } .corner-tr, .corner-br { right: 8px; }
+            .session-timer { margin-left: 0; width: 100%; justify-content: space-between; }
+            .timer-bar-wrap { flex: 1; width: auto; max-width: 200px; }
+            .culto-bar-tema { flex: 1 1 100%; order: -1; }
+            .panel { padding: 14px; }
+            .site-header h1 { letter-spacing: 0.22em; }
+            .site-header .tagline { letter-spacing: 0.25em; }
+            .btn-primary, .btn-iniciar, .btn-send, .btn-checkout { letter-spacing: 0.22em; }
+        }
+        @media (max-width: 420px) {
+            .buffer-meta .hint { flex: 1 1 100%; margin-right: 0; }
+            .gauge-track { width: 46px; }
+            .footer { letter-spacing: 0.2em; }
+        }
+        @media (max-height: 700px) and (min-width: 941px) {
+            .site-header { margin-bottom: 10px; }
+            .log-terminal { height: 56px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+        }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes expandLine { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
@@ -219,6 +309,7 @@
     </style>
 </head>
 <body>
+    <canvas id="palco"></canvas>
     <div class="corner corner-tl"></div>
     <div class="corner corner-tr"></div>
     <div class="corner corner-bl"></div>
@@ -230,34 +321,35 @@
         <div class="boot-line"></div>
         <div class="boot-bar-wrap"><div class="boot-bar"></div></div>
         <div class="boot-msg" id="bootMsg">Inicializando módulos...</div>
+        <button type="button" class="boot-pular" id="btnPular">Pular abertura</button>
     </div>
     <!-- INTERFACE -->
     <div id="mainInterface">
         <header class="site-header">
             <h1>Alpha Tech</h1>
-            <p class="tagline">Live Ministry Platform &nbsp;·&nbsp; v4.1</p>
+            <p class="tagline">Live Ministry Platform &nbsp;·&nbsp; v5.0</p>
             <div class="divider-ornament"><span></span><i>✦</i><span></span></div>
         </header>
-        <!-- LOGIN SCREEN -->
+        <!-- LOGIN -->
         <div class="screen active" id="loginScreen">
             <div class="login-panel">
                 <div class="panel-title">✦ Acesso à Plataforma</div>
                 <div class="field-group">
-                    <label class="field-label">E-mail</label>
-                    <input type="email" id="inputEmail" class="field-input" placeholder="seu@email.com" />
+                    <label class="field-label" for="inputEmail">E-mail</label>
+                    <input type="email" id="inputEmail" class="field-input" autocomplete="email" placeholder="seu@email.com" />
                 </div>
                 <div class="field-group">
-                    <label class="field-label">Senha</label>
-                    <input type="password" id="inputSenha" class="field-input" placeholder="••••••••" />
+                    <label class="field-label" for="inputSenha">Senha</label>
+                    <input type="password" id="inputSenha" class="field-input" autocomplete="current-password" placeholder="••••••••" />
                 </div>
-                <button class="btn-primary" id="btnLogin" onclick="fazerLogin()">✦ &nbsp; Entrar &nbsp; ✦</button>
-                <div class="login-error" id="loginError"></div>
+                <button type="button" class="btn-primary" id="btnLogin">✦ &nbsp; Entrar &nbsp; ✦</button>
+                <div class="login-error" id="loginError" role="alert" aria-live="assertive"></div>
                 <div class="login-footer">
-                    Não tem acesso? <a class="link-comprar" onclick="abrirModalCompra()">Adquirir créditos de culto</a>
+                    Não tem acesso? <button type="button" class="link-comprar" id="linkComprar">Adquirir créditos de culto</button>
                 </div>
             </div>
         </div>
-        <!-- SESSION BAR -->
+        <!-- SESSÃO -->
         <div id="sessionBar">
             <span class="session-user" id="sessionUser">—</span>
             <div class="session-credits">
@@ -270,611 +362,1270 @@
                     <div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div>
                 </div>
             </div>
-            <button class="btn-comprar-mais" onclick="abrirModalCompra()">+ Créditos</button>
-            <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+            <button type="button" class="btn-comprar-mais" id="btnMaisCreditos">+ Créditos</button>
+            <button type="button" class="btn-logout" id="btnSair">Sair</button>
         </div>
-        <!-- CULTO BAR -->
+        <!-- CULTO -->
         <div class="culto-bar" id="cultoBar">
             <span class="culto-bar-tag">Em Andamento</span>
             <span class="culto-bar-tema" id="barTema">—</span>
             <span class="badge-tom" id="barTom">—</span>
             <span class="culto-bar-info" id="barVersiculo"></span>
             <span class="culto-bar-info">Trechos: <span id="trechoCountBar">0</span></span>
-            <button class="btn-encerrar" onclick="encerrarCulto()">Encerrar Culto</button>
+            <button type="button" class="btn-encerrar" id="btnEncerrar">Encerrar Culto</button>
         </div>
-        <!-- SETUP SCREEN -->
+        <!-- SETUP -->
         <div class="screen" id="setupScreen">
-            <div class="setup-panel" style="width:96%;max-width:620px;">
-                <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,0.04) 0%,transparent 60%);pointer-events:none;"></div>
+            <div class="setup-panel">
                 <div class="panel-title">✦ Configuração do Culto</div>
                 <div class="field-group">
-                    <label class="field-label">Tema da Mensagem</label>
+                    <label class="field-label" for="inputTema">Tema da Mensagem</label>
                     <input type="text" id="inputTema" class="field-input" placeholder="Ex: A fé que move montanhas" />
                 </div>
                 <div class="field-group">
-                    <label class="field-label">Versículo Base (opcional)</label>
+                    <label class="field-label" for="inputVersiculo">Versículo Base (opcional)</label>
                     <input type="text" id="inputVersiculo" class="field-input" placeholder="Ex: Mateus 17:20" />
                 </div>
                 <div class="field-group">
-                    <label class="field-label">Tom do Culto</label>
+                    <span class="field-label">Tom do Culto</span>
                     <div class="tom-grid">
-                        <button class="tom-btn" data-tom="Evangelístico" onclick="selectTom(this)"><span class="tom-icon">🌍</span>Evangelístico</button>
-                        <button class="tom-btn" data-tom="Edificação" onclick="selectTom(this)"><span class="tom-icon">🏛️</span>Edificação</button>
-                        <button class="tom-btn" data-tom="Intercessão" onclick="selectTom(this)"><span class="tom-icon">🙏</span>Intercessão</button>
-                        <button class="tom-btn" data-tom="Adoração" onclick="selectTom(this)"><span class="tom-icon">🎶</span>Adoração</button>
+                        <button type="button" class="tom-btn" data-tom="Evangelístico"><span class="tom-icon">🌍</span>Evangelístico</button>
+                        <button type="button" class="tom-btn" data-tom="Edificação"><span class="tom-icon">🏛️</span>Edificação</button>
+                        <button type="button" class="tom-btn" data-tom="Intercessão"><span class="tom-icon">🙏</span>Intercessão</button>
+                        <button type="button" class="tom-btn" data-tom="Adoração"><span class="tom-icon">🎶</span>Adoração</button>
                     </div>
                 </div>
-                <button class="btn-iniciar" id="btnIniciar" onclick="iniciarCulto()" disabled>✦ &nbsp; Iniciar Culto &nbsp; ✦</button>
+                <button type="button" class="btn-iniciar" id="btnIniciar" disabled>✦ &nbsp; Iniciar Culto &nbsp; ✦</button>
+                <div class="setup-hint" id="setupHint">Informe o tema para liberar o início</div>
             </div>
         </div>
-        <!-- MAIN GRID -->
+        <!-- GRID -->
         <div id="mainGrid">
             <div class="panel panel-input">
                 <div class="panel-header">
-                    <button id="powerBtn" class="btn-power" onclick="toggleSystem()"><span class="pulse-dot"></span> Offline</button>
+                    <button type="button" id="powerBtn" class="btn-power" aria-pressed="false"><span class="pulse-dot"></span> Offline</button>
                     <span class="panel-header-title">✦ Entrada de Áudio</span>
                     <div class="sens-wrap">
-                        <span>Sens.</span>
-                        <input type="range" id="filterRange" min="0" max="50" value="10" oninput="updateFilterLabel(this.value)">
+                        <label for="filterRange">Sens.</label>
+                        <input type="range" id="filterRange" min="0" max="50" value="10">
                         <span id="filterValue">10c</span>
                     </div>
                 </div>
-                <div class="contexto-box">
-                    <div class="contexto-label">Contexto acumulado · <span id="trechoCount">0 trechos</span></div>
-                    <div class="contexto-texto" id="contextoTexto">Nenhum trecho enviado ainda.</div>
-                </div>
-                <div class="wave-wrap" id="waveWrap"></div>
-                <div class="log-terminal" id="logTerminal">
-                    <div class="log-entry"><span class="log-ts">[SISTEMA]</span><span class="log-msg"> Alpha Tech v4.1 online.</span></div>
-                </div>
-                <div class="live-preview-label">Transcrição em tempo real</div>
-                <div class="live-preview" id="livePreviewBox">
-                    <span id="interimText" style="opacity:0.3">...aguardando inicialização...</span>
-                </div>
-                <!-- DOIS MEDIDORES: o balde do navegador e o balde do n8n -->
-                <div class="buffer-meta">
-                    <span class="hint">[Enter] envia agora</span>
-                    <div class="gauge">
-                        <span class="gauge-label">Local</span>
-                        <div class="gauge-track"><div class="gauge-fill" id="gaugeLocal"></div></div>
-                        <span class="gauge-num" id="charCount">0/200</span>
+                <div class="panel-body">
+                    <div class="contexto-box">
+                        <div class="contexto-label">Contexto acumulado · <span id="trechoCount">0 trechos</span></div>
+                        <div class="contexto-texto" id="contextoTexto">Nenhum trecho enviado ainda.</div>
                     </div>
-                    <div class="gauge">
-                        <span class="gauge-label">n8n</span>
-                        <div class="gauge-track"><div class="gauge-fill n8n" id="gaugeN8n"></div></div>
-                        <span class="gauge-num n8n" id="n8nCount">0/200</span>
+                    <div class="wave-wrap" id="waveWrap"></div>
+                    <div class="log-terminal" id="logTerminal" aria-live="polite">
+                        <div class="log-entry"><span class="log-ts">[SISTEMA]</span><span class="log-msg"> Alpha Tech v5.0 online.</span></div>
+                    </div>
+                    <div class="live-preview-label">Transcrição em tempo real</div>
+                    <div class="live-preview" id="livePreviewBox">
+                        <span id="interimText" style="opacity:0.3">...aguardando inicialização...</span>
                     </div>
                 </div>
-                <button id="sendBtn" class="btn-send" onclick="forceSend()">✦ &nbsp; Transmitir Trecho &nbsp; ✦</button>
+                <div class="panel-foot">
+                    <!-- Os dois medidores contam a mesma história em duas etapas:
+                         o que o microfone já pegou, e o que já saiu daqui. -->
+                    <div class="buffer-meta">
+                        <span class="hint" id="sendHint">Ligue o microfone para transmitir</span>
+                        <div class="gauges">
+                            <div class="gauge" title="Fala já captada nesta tela, ainda não transmitida">
+                                <span class="gauge-label">Captado</span>
+                                <div class="gauge-track"><div class="gauge-fill" id="gaugeLocal"></div></div>
+                                <span class="gauge-num" id="charCount">0/200</span>
+                            </div>
+                            <div class="gauge" title="Já transmitido — aguardando a IA responder">
+                                <span class="gauge-label">Enviado</span>
+                                <div class="gauge-track"><div class="gauge-fill enviado" id="gaugeN8n"></div></div>
+                                <span class="gauge-num enviado" id="n8nCount">0/200</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="sendBtn" class="btn-send" disabled>✦ &nbsp; Transmitir Trecho &nbsp; ✦</button>
+                </div>
             </div>
             <div class="panel panel-output">
                 <div class="panel-header">
                     <span class="panel-header-title">⬡ Análise de IA</span>
-                    <span id="aiStatus">Em espera</span>
+                    <span id="aiStatus" aria-live="polite">Em espera</span>
                 </div>
                 <div class="ai-feed" id="aiFeed">
                     <div class="ai-empty"><div class="ornament">⬡</div><span>Aguardando transmissão</span></div>
                 </div>
             </div>
         </div>
-        <p class="footer">Alpha Tech &nbsp;·&nbsp; Live Ministry Platform v4.1</p>
+        <p class="footer">Alpha Tech &nbsp;·&nbsp; Live Ministry Platform v5.0</p>
     </div>
-    <!-- MODAL COMPRA -->
-    <div class="modal-overlay" id="modalCompra">
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modalCompra" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
         <div class="modal">
-            <button class="modal-close" onclick="fecharModalCompra()">✕</button>
-            <div class="modal-title">✦ Adquirir Créditos de Culto</div>
+            <button type="button" class="modal-close" id="btnFecharModal" aria-label="Fechar">✕</button>
+            <div class="modal-title" id="modalTitulo">✦ Adquirir Créditos de Culto</div>
             <div class="planos-grid">
-                <div class="plano-card selected" data-qtd="1" data-preco="2990" onclick="selecionarPlano(this)">
-                    <div class="plano-qtd">1</div>
-                    <div class="plano-label">Culto</div>
+                <button type="button" class="plano-card selected" data-qtd="1" data-preco="2990">
+                    <div class="plano-qtd">1</div><div class="plano-label">Culto</div>
                     <div class="plano-preco">R$ 29,90 <span>/un</span></div>
-                </div>
-                <div class="plano-card" data-qtd="4" data-preco="9990" onclick="selecionarPlano(this)">
-                    <div class="plano-qtd">4</div>
-                    <div class="plano-label">Cultos</div>
+                </button>
+                <button type="button" class="plano-card" data-qtd="4" data-preco="9990">
+                    <div class="plano-qtd">4</div><div class="plano-label">Cultos</div>
                     <div class="plano-preco">R$ 99,90 <span>total</span></div>
-                </div>
-                <div class="plano-card" data-qtd="12" data-preco="24990" onclick="selecionarPlano(this)">
-                    <div class="plano-qtd">12</div>
-                    <div class="plano-label">Cultos</div>
+                </button>
+                <button type="button" class="plano-card" data-qtd="12" data-preco="24990">
+                    <div class="plano-qtd">12</div><div class="plano-label">Cultos</div>
                     <div class="plano-preco">R$ 249,90 <span>total</span></div>
-                </div>
+                </button>
             </div>
             <div class="modal-info">
                 Cada crédito libera <strong>18 horas</strong> de uso da plataforma.<br>
                 Créditos são consumidos ao iniciar uma nova sessão (login após expiração).
             </div>
             <div class="field-group" id="campoEmailCompra" style="display:none;">
-                <label class="field-label">Seu e-mail (para receber o acesso)</label>
-                <input type="email" id="inputEmailCompra" class="field-input" placeholder="seu@email.com" />
+                <label class="field-label" for="inputEmailCompra">Seu e-mail (para receber o acesso)</label>
+                <input type="email" id="inputEmailCompra" class="field-input" autocomplete="email" placeholder="seu@email.com" />
             </div>
-            <button class="btn-checkout" id="btnCheckout" onclick="irParaCheckout()">✦ &nbsp; Ir para Pagamento &nbsp; ✦</button>
+            <button type="button" class="btn-checkout" id="btnCheckout">✦ &nbsp; Ir para Pagamento &nbsp; ✦</button>
+            <div class="link-fallback" id="linkFallback">
+                O navegador bloqueou a nova aba.<br><a id="linkPagamento" href="#" target="_blank" rel="noopener">Abrir o pagamento aqui</a>
+            </div>
             <div class="asaas-note">Pagamento processado com segurança pelo Asaas · PIX, Cartão ou Boleto</div>
         </div>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // ═══════════════════════════════════════════════
-        // CONFIGURAÇÃO
-        // ═══════════════════════════════════════════════
-        const WEBHOOK_CULTO    = 'https://n8n.squirrelstore.com.br/webhook/537866eb-700d-431a-83b5-13da0dcad0aa';
-        const WEBHOOK_LOGIN    = 'https://n8n.squirrelstore.com.br/webhook/alphatech-login';
-        const WEBHOOK_CHECKOUT = 'https://n8n.squirrelstore.com.br/webhook/alphatech-checkout';
-        const SESSION_DURATION = 18 * 60 * 60 * 1000;
-        const CHAR_LIMIT       = 600;   // teto duro: manda mesmo sem terminar a frase
-        const MIN_ENVIO        = 200;   // MESMO valor do MIN_CARACTERES no n8n
-        const FLUSH_MS         = 20000; // parou de falar com texto pendente? manda.
+    // ═══════════════════════════════════════════════════════════════════
+    //  PALCO 3D
+    //
+    //  A marca cai de cima, atinge o chão e racha a grade dourada. As
+    //  fissuras não somem quando a abertura termina: a câmera desce, o
+    //  letreiro se afasta e o chão rachado VIRA o fundo do app durante
+    //  todo o culto. A abertura não é uma tela à parte — é o momento em
+    //  que o chão do programa ganha a marca.
+    //
+    //  Desliga sozinho em tela pequena, movimento reduzido, sem WebGL ou
+    //  se o Three.js não carregar. Nesses casos a abertura em CSS assume.
+    // ═══════════════════════════════════════════════════════════════════
+    const Palco = (function () {
+        const PALAVRA   = 'ALPHA TECH';
+        const LARG_TEX  = 1024;          // resolução da textura do chão
+        const T_QUEDA   = 0.30;          // primeira letra começa a cair
+        const T_IMPACTO = 1.55;          // colisão
+        const T_FIM     = 4.10;          // fim da abertura
+        const DIST_REPOUSO = 9.4;        // z da câmera no enquadramento final
+        const COR = { quente: '#ffe9b0', ouro: '#c9a84c', brasa: '#6b4a12' };
 
-        // ═══════════════════════════════════════════════
-        // ESTADO
-        // ═══════════════════════════════════════════════
-        let sessao = null;
-        let timerInterval = null;
-        let cultoTema = '', cultoVersiculo = '', cultoTom = '', cultoTrechos = [];
-        let isSystemOn = false, recognition = null;
-        let minCharFilter = 10, lastActivityTime = Date.now(), isSendingLock = false;
+        let renderer, cena, camera, canvas;
+        let chaoCtx, chaoTex, chaoBase, fissuras = [], avancoRachadura = 0, chaoSujo = true;
+        let grupoLetras, letras = [], anel, poeira, poeiraVel = [];
+        let rodando = false, modo = 'parado', t0 = 0, raf = null, ultimoQuadro = 0;
+        let tremor = 0, larguraPalavra = 0;
+        let aoTerminar = null;
 
-        // bufferLocal ACUMULA a fala aqui no navegador antes de mandar.
-        // Antes o código fazia currentBuffer = finalT (substituía), e a fala
-        // anterior era perdida. Agora ele soma.
-        let bufferLocal = '';
-
-        // DOM refs
-        const logTerminal     = document.getElementById('logTerminal');
-        const interimText     = document.getElementById('interimText');
-        const livePreviewBox  = document.getElementById('livePreviewBox');
-        const aiFeed          = document.getElementById('aiFeed');
-        const powerBtn        = document.getElementById('powerBtn');
-        const aiStatus        = document.getElementById('aiStatus');
-        const charCountSpan   = document.getElementById('charCount');
-        const n8nCountSpan    = document.getElementById('n8nCount');
-        const gaugeLocal      = document.getElementById('gaugeLocal');
-        const gaugeN8n        = document.getElementById('gaugeN8n');
-        const filterValueSpan = document.getElementById('filterValue');
-        const waveWrap        = document.getElementById('waveWrap');
-        const contextoTexto   = document.getElementById('contextoTexto');
-        const trechoCount     = document.getElementById('trechoCount');
-        const trechoCountBar  = document.getElementById('trechoCountBar');
-
-        // ═══════════════════════════════════════════════
-        // BOOT
-        // ═══════════════════════════════════════════════
-        window.onload = function() {
-            waveWrap.innerHTML = Array.from({length:26}, (_,i) => {
-                const h = 4 + Math.round(Math.random()*22);
-                return `<div class="wave-bar" style="height:${h}px;--h:${4+Math.round(Math.random()*22)}px;animation-delay:${(i*0.04).toFixed(2)}s"></div>`;
-            }).join('');
-            const msgs = ["Verificando credenciais...", "Carregando módulos...", "Alpha Tech Online."];
-            let i = 0;
-            const iv = setInterval(() => { if(i < msgs.length) document.getElementById('bootMsg').innerText = msgs[i++]; }, 500);
-            setTimeout(() => {
-                clearInterval(iv);
-                const ol = document.getElementById('bootOverlay');
-                ol.style.opacity = '0';
-                setTimeout(() => {
-                    ol.style.display = 'none';
-                    document.getElementById('mainInterface').classList.add('system-ready');
-                    let sessaoSalva = null;
-                    try { sessaoSalva = JSON.parse(localStorage.getItem('alphatech_sessao') || 'null'); } catch(e) {}
-                    if (sessaoSalva && sessaoSalva.expira > Date.now()) {
-                        sessao = sessaoSalva;
-                        entrarNaPlataforma();
-                    }
-                }, 700);
-            }, 2200);
-        };
-
-        // ═══════════════════════════════════════════════
-        // LOGIN
-        // ═══════════════════════════════════════════════
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                const tela = document.getElementById('loginScreen');
-                if (tela.classList.contains('active')) fazerLogin();
-                else if (isSystemOn) forceSend();
-            }
-        });
-        async function fazerLogin() {
-            const email = document.getElementById('inputEmail').value.trim();
-            const senha = document.getElementById('inputSenha').value;
-            const erro  = document.getElementById('loginError');
-            const btn   = document.getElementById('btnLogin');
-            if (!email || !senha) { erro.innerText = 'Preencha e-mail e senha.'; return; }
-            btn.disabled = true; btn.classList.add('loading');
-            btn.innerText = 'Verificando...'; erro.innerText = '';
+        function suportado() {
+            if (!window.THREE) return false;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+            if (window.innerWidth < 900) return false;          // só no computador
+            if ((navigator.hardwareConcurrency || 4) <= 2) return false;
             try {
-                const res = await fetch(WEBHOOK_LOGIN, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, senha })
-                });
-                const data = await res.json();
-                if (data.sucesso) {
-                    sessao = {
-                        email: data.email,
-                        nome: data.nome || email,
-                        token: data.token,
-                        expira: data.expira || (Date.now() + SESSION_DURATION),
-                        creditos: data.creditos
+                const c = document.createElement('canvas');
+                return !!(c.getContext('webgl2') || c.getContext('webgl'));
+            } catch (e) { return false; }
+        }
+
+        // ── textura de uma letra: ferro fundido, não ouro polido ──
+        // A silhueta é desenhada primeiro e vira máscara; com
+        // globalCompositeOperation = 'source-atop' todo o resto (metal escovado,
+        // corrosão, riscos, chanfro) só pinta DENTRO da letra.
+        function texturaDaLetra(ch) {
+            const L = 384, A = 470, FONTE = '700 300px Cinzel, Georgia, serif';
+            const c = document.createElement('canvas');
+            c.width = L; c.height = A;
+            const x = c.getContext('2d');
+            x.font = FONTE; x.textAlign = 'center'; x.textBaseline = 'middle';
+
+            x.fillStyle = '#2b2823';
+            x.fillText(ch, L / 2, A / 2);              // silhueta = máscara
+
+            x.globalCompositeOperation = 'source-atop';
+
+            // Ferro frio com a luz batendo de cima.
+            const g = x.createLinearGradient(0, A * 0.16, 0, A * 0.84);
+            g.addColorStop(0.00, '#9c8752');
+            g.addColorStop(0.16, '#5f5340');
+            g.addColorStop(0.44, '#332e27');
+            g.addColorStop(0.74, '#221f1a');
+            g.addColorStop(1.00, '#100e0c');
+            x.fillStyle = g;
+            x.fillRect(0, 0, L, A);
+
+            // Escovado vertical da fundição.
+            for (let i = 0; i < 240; i++) {
+                const px = Math.random() * L;
+                x.globalAlpha = 0.03 + Math.random() * 0.05;
+                x.strokeStyle = Math.random() > 0.5 ? '#c9a84c' : '#000000';
+                x.lineWidth = 0.6 + Math.random() * 1.5;
+                x.beginPath(); x.moveTo(px, 0); x.lineTo(px + (Math.random() - 0.5) * 9, A); x.stroke();
+            }
+            // Corrosão e bolhas do metal.
+            for (let i = 0; i < 430; i++) {
+                x.globalAlpha = 0.05 + Math.random() * 0.17;
+                x.fillStyle = Math.random() > 0.62 ? '#000000' : '#6d5a2c';
+                x.beginPath();
+                x.arc(Math.random() * L, Math.random() * A, 0.6 + Math.random() * 2.7, 0, 6.3);
+                x.fill();
+            }
+            // Riscos de uso.
+            for (let i = 0; i < 13; i++) {
+                x.globalAlpha = 0.10 + Math.random() * 0.20;
+                x.strokeStyle = '#e8d08a';
+                x.lineWidth = 0.5 + Math.random();
+                const sx = Math.random() * L, sy = Math.random() * A;
+                x.beginPath(); x.moveTo(sx, sy);
+                x.lineTo(sx + (Math.random() - 0.5) * 150, sy + (Math.random() - 0.5) * 42);
+                x.stroke();
+            }
+            // Chanfro: contorno deslocado acende a quina de cima e apaga a de baixo.
+            x.globalAlpha = 1;
+            x.lineWidth = 3.4;
+            x.strokeStyle = 'rgba(236,214,150,0.5)';
+            x.strokeText(ch, L / 2, A / 2 - 3);
+            x.strokeStyle = 'rgba(0,0,0,0.55)';
+            x.strokeText(ch, L / 2, A / 2 + 3.5);
+
+            x.globalCompositeOperation = 'source-over';
+            const t = new THREE.CanvasTexture(c);
+            t.anisotropy = 8;
+            return { textura: t, avanco: x.measureText(ch).width };
+        }
+
+        function montarPalavra() {
+            grupoLetras = new THREE.Group();
+            const medidor = document.createElement('canvas').getContext('2d');
+            medidor.font = '700 300px Cinzel, Georgia, serif';
+            const ESCALA = 2.0 / 470;            // canvas de 470px vira 2 unidades
+            const TRACKING = 105 * ESCALA;
+            const ESPACO = 128;
+
+            // Largura total primeiro, para centralizar de verdade.
+            let total = 0;
+            for (const ch of PALAVRA) {
+                total += (ch === ' ' ? ESPACO : medidor.measureText(ch).width) * ESCALA + TRACKING;
+            }
+            total -= TRACKING;
+            larguraPalavra = total;
+
+            let x = -total / 2;
+            for (const ch of PALAVRA) {
+                const avancoCru = (ch === ' ' ? ESPACO : medidor.measureText(ch).width) * ESCALA;
+                if (ch !== ' ') {
+                    const { textura } = texturaDaLetra(ch);
+                    const letra = new THREE.Group();
+                    // Espessura da peça: cópias recuando em Z. As de trás são a
+                    // lateral bruta do ferro, quase sem luz.
+                    for (let i = 0; i < 8; i++) {
+                        const m = new THREE.Mesh(
+                            new THREE.PlaneGeometry(384 * ESCALA, 470 * ESCALA),
+                            new THREE.MeshBasicMaterial({
+                                map: textura, transparent: true, alphaTest: 0.12,
+                                color: new THREE.Color().setScalar(i === 0 ? 1 : 0.42 - i * 0.035),
+                                depthWrite: true
+                            })
+                        );
+                        m.position.z = -i * 0.05;
+                        letra.add(m);
+                    }
+                    letra.position.set(x + avancoCru / 2, 0, 0);
+                    // Ferro não esvoaça: cai reto, com uma inclinação mínima.
+                    letra.userData = {
+                        alvoY: 1.02,
+                        alturaInicial: 13 + Math.random() * 2.5,
+                        atraso: T_QUEDA + grupoLetras.children.length * 0.038,
+                        giro: (Math.random() - 0.5) * 0.16,
+                        inclina: (Math.random() - 0.5) * 0.12
                     };
-                    try { localStorage.setItem('alphatech_sessao', JSON.stringify(sessao)); } catch(e) {}
-                    entrarNaPlataforma();
-                } else {
-                    erro.innerText = data.mensagem || 'E-mail ou senha incorretos.';
+                    grupoLetras.add(letra);
                 }
-            } catch(e) {
-                erro.innerText = 'Erro de conexão. Tente novamente.';
-            } finally {
-                btn.disabled = false; btn.classList.remove('loading');
-                btn.innerHTML = '✦ &nbsp; Entrar &nbsp; ✦';
+                x += avancoCru + TRACKING;
+            }
+            cena.add(grupoLetras);
+        }
+
+        // ── fissuras: polilinhas irregulares saindo do ponto de impacto ──
+        function gerarFissura(x, y, ang, comp, nivel) {
+            const pts = [[x, y]];
+            let cx = x, cy = y, a = ang;
+            const passos = 16 + Math.floor(Math.random() * 8);
+            for (let i = 0; i < passos; i++) {
+                a += (Math.random() - 0.5) * 0.55;
+                const d = comp / passos;
+                cx += Math.cos(a) * d; cy += Math.sin(a) * d;
+                pts.push([cx, cy]);
+            }
+            const ramos = [];
+            if (nivel < 2) {
+                const qtd = nivel === 0 ? 2 : 1;
+                for (let i = 0; i < qtd; i++) {
+                    const j = 4 + Math.floor(Math.random() * (pts.length - 6));
+                    ramos.push(gerarFissura(pts[j][0], pts[j][1], ang + (Math.random() - 0.5) * 1.9,
+                                            comp * 0.5, nivel + 1));
+                }
+            }
+            return { pts, ramos, nivel };
+        }
+        function gerarTodasAsFissuras() {
+            fissuras = [];
+            const cx = LARG_TEX / 2, cy = LARG_TEX / 2;
+            for (let i = 0; i < 8; i++) {
+                const ang = (i / 8) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+                fissuras.push(gerarFissura(cx, cy, ang, 150 + Math.random() * 160, 0));
             }
         }
-        function entrarNaPlataforma() {
-            document.getElementById('loginScreen').classList.remove('active');
-            document.getElementById('sessionUser').innerText = sessao.nome || sessao.email;
-            document.getElementById('sessionCredits').innerText = sessao.creditos;
-            const bar = document.getElementById('sessionBar');
-            bar.style.display = 'flex';
-            setTimeout(() => bar.classList.add('visible'), 50);
-            iniciarContador();
-            document.getElementById('setupScreen').classList.add('active');
-            setTimeout(() => document.getElementById('setupScreen').classList.add('entering'), 50);
-            document.getElementById('inputTema').addEventListener('input', function() {
-                document.getElementById('btnIniciar').disabled = !this.value.trim();
-            });
-        }
-        function fazerLogout() {
-            if (!confirm('Deseja sair? Sua sessão atual continuará válida ao retornar.')) return;
-            try { localStorage.removeItem('alphatech_sessao'); } catch(e) {}
-            sessao = null;
-            clearInterval(timerInterval);
-            location.reload();
-        }
-
-        // ═══════════════════════════════════════════════
-        // CONTADOR DE SESSÃO
-        // ═══════════════════════════════════════════════
-        function iniciarContador() {
-            atualizarContador();
-            timerInterval = setInterval(() => {
-                if (!sessao) return;
-                if (Date.now() >= sessao.expira) { clearInterval(timerInterval); sessaoExpirou(); return; }
-                atualizarContador();
-            }, 1000);
-        }
-        function atualizarContador() {
-            const restante = Math.max(0, sessao.expira - Date.now());
-            const h = Math.floor(restante / 3600000);
-            const m = Math.floor((restante % 3600000) / 60000);
-            const s = Math.floor((restante % 60000) / 1000);
-            const display = document.getElementById('timerDisplay');
-            const bar = document.getElementById('timerBarFill');
-            display.innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            bar.style.width = ((restante / SESSION_DURATION) * 100) + '%';
-            const isWarning = restante < 30 * 60 * 1000;
-            display.classList.toggle('warning', isWarning);
-            bar.classList.toggle('warning', isWarning);
-        }
-        function sessaoExpirou() {
-            try { localStorage.removeItem('alphatech_sessao'); } catch(e) {}
-            alert('⏰ Sua sessão de 18h expirou.\n\nSe você tem mais créditos, faça login novamente para iniciar uma nova sessão.');
-            location.reload();
-        }
-
-        // ═══════════════════════════════════════════════
-        // SETUP DO CULTO
-        // ═══════════════════════════════════════════════
-        function selectTom(btn) {
-            document.querySelectorAll('.tom-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            cultoTom = btn.dataset.tom;
-        }
-        function iniciarCulto() {
-            cultoTema = document.getElementById('inputTema').value.trim();
-            cultoVersiculo = document.getElementById('inputVersiculo').value.trim();
-            if (!cultoTom) cultoTom = 'Geral';
-            cultoTrechos = [];
-            bufferLocal = '';
-            atualizarMedidores(0, 0);
-            document.getElementById('barTema').innerText = cultoTema;
-            document.getElementById('barTom').innerText = cultoTom;
-            document.getElementById('barVersiculo').innerText = cultoVersiculo ? '📖 ' + cultoVersiculo : '';
-            const setup = document.getElementById('setupScreen');
-            setup.style.transition = 'opacity 0.4s, transform 0.4s';
-            setup.style.opacity = '0'; setup.style.transform = 'translateY(-10px)';
-            setTimeout(() => {
-                setup.classList.remove('active');
-                const bar = document.getElementById('cultoBar');
-                const grid = document.getElementById('mainGrid');
-                bar.style.display = 'flex';
-                grid.style.display = 'grid';
-                setTimeout(() => { bar.classList.add('visible'); grid.classList.add('visible'); }, 50);
-                addLog(`Culto iniciado — "${cultoTema}" · ${cultoTom}`);
-                if (cultoVersiculo) addLog(`Base: ${cultoVersiculo}`);
-                addLog(`Envia ao n8n a cada ${MIN_ENVIO} chars acumulados.`);
-            }, 420);
-        }
-        function encerrarCulto() {
-            if (!confirm('Encerrar o culto e limpar o contexto?')) return;
-            cultoTrechos = [];
-            bufferLocal = '';
-            atualizarMedidores(0, 0);
-            const bar = document.getElementById('cultoBar');
-            const grid = document.getElementById('mainGrid');
-            bar.classList.remove('visible'); grid.classList.remove('visible');
-            setTimeout(() => {
-                bar.style.display = 'none'; grid.style.display = 'none';
-                const setup = document.getElementById('setupScreen');
-                setup.classList.add('active');
-                setup.style.opacity = '1'; setup.style.transform = 'translateY(0)';
-                document.getElementById('inputTema').value = '';
-                document.getElementById('inputVersiculo').value = '';
-                document.querySelectorAll('.tom-btn').forEach(b => b.classList.remove('selected'));
-                document.getElementById('btnIniciar').disabled = true;
-                cultoTom = '';
-                aiFeed.innerHTML = '<div class="ai-empty"><div class="ornament">⬡</div><span>Aguardando transmissão</span></div>';
-                atualizarContextoBox();
-                if (isSystemOn) toggleSystem();
-            }, 500);
-        }
-
-        // ═══════════════════════════════════════════════
-        // MODAL DE COMPRA
-        // ═══════════════════════════════════════════════
-        let planoSelecionado = { qtd: 1, preco: 2990 };
-        function abrirModalCompra() {
-            document.getElementById('campoEmailCompra').style.display = sessao ? 'none' : 'flex';
-            document.getElementById('modalCompra').classList.add('open');
-        }
-        function fecharModalCompra() { document.getElementById('modalCompra').classList.remove('open'); }
-        function selecionarPlano(card) {
-            document.querySelectorAll('.plano-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            planoSelecionado = { qtd: parseInt(card.dataset.qtd), preco: parseInt(card.dataset.preco) };
-        }
-        async function irParaCheckout() {
-            const emailCompra = sessao ? sessao.email : document.getElementById('inputEmailCompra').value.trim();
-            if (!emailCompra) { alert('Informe seu e-mail para continuar.'); return; }
-            const btn = document.getElementById('btnCheckout');
-            btn.disabled = true; btn.innerText = 'Gerando link...';
-            try {
-                const res = await fetch(WEBHOOK_CHECKOUT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: emailCompra,
-                        quantidade: planoSelecionado.qtd,
-                        valor: planoSelecionado.preco,
-                        descricao: `Alpha Tech — ${planoSelecionado.qtd} crédito(s) de culto`
-                    })
-                });
-                const data = await res.json();
-                if (data.url_pagamento) { window.open(data.url_pagamento, '_blank'); fecharModalCompra(); }
-                else { alert('Erro ao gerar link de pagamento. Tente novamente.'); }
-            } catch(e) {
-                alert('Erro de conexão. Tente novamente.');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '✦ &nbsp; Ir para Pagamento &nbsp; ✦';
+        function traçarFissura(f, avanco, cor, largura, dx, dy) {
+            const n = Math.max(2, Math.floor(f.pts.length * avanco));
+            chaoCtx.strokeStyle = cor;
+            chaoCtx.lineWidth = Math.max(0.4, largura * (1 - f.nivel * 0.3));
+            chaoCtx.lineCap = 'round'; chaoCtx.lineJoin = 'round';
+            chaoCtx.beginPath();
+            chaoCtx.moveTo(f.pts[0][0] + dx, f.pts[0][1] + dy);
+            for (let i = 1; i < n; i++) chaoCtx.lineTo(f.pts[i][0] + dx, f.pts[i][1] + dy);
+            chaoCtx.stroke();
+            if (avanco > 0.45) {
+                f.ramos.forEach(r => traçarFissura(r, (avanco - 0.45) / 0.55, cor, largura, dx, dy));
             }
         }
 
-        // ═══════════════════════════════════════════════
-        // UTILITÁRIOS
-        // ═══════════════════════════════════════════════
-        function addLog(msg) {
-            const t = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-            const d = document.createElement('div'); d.className = 'log-entry';
-            const ts = document.createElement('span'); ts.className = 'log-ts'; ts.textContent = `[${t}]`;
-            const tx = document.createElement('span'); tx.className = 'log-msg'; tx.textContent = ' ' + msg;
-            d.append(ts, tx);
-            logTerminal.appendChild(d);
-            logTerminal.scrollTop = logTerminal.scrollHeight;
-        }
-        function atualizarContextoBox() {
-            const n = cultoTrechos.length;
-            trechoCount.innerText = n + (n === 1 ? ' trecho' : ' trechos');
-            trechoCountBar.innerText = n;
-            contextoTexto.innerText = n === 0
-                ? 'Nenhum trecho enviado ainda.'
-                : '...' + cultoTrechos.slice(-3).join(' ... ').slice(-130);
-        }
-        function updateFilterLabel(val) { minCharFilter = parseInt(val); filterValueSpan.innerText = val + "c"; }
-
-        // Os dois medidores: balde do navegador e balde do n8n
-        function atualizarMedidores(local, n8n) {
-            if (local !== null && local !== undefined) {
-                charCountSpan.innerText = `${local}/${MIN_ENVIO}`;
-                gaugeLocal.style.width = Math.min(100, (local / MIN_ENVIO) * 100) + '%';
-                livePreviewBox.classList.toggle('buffer-warning', local > CHAR_LIMIT - 50);
+        // A terra é desenhada UMA vez e reaproveitada. Só a fenda é redesenhada
+        // a cada quadro enquanto ela se abre.
+        function montarBaseDaTerra() {
+            const b = document.createElement('canvas');
+            b.width = b.height = LARG_TEX;
+            const x = b.getContext('2d');
+            x.fillStyle = '#0b0a08';
+            x.fillRect(0, 0, LARG_TEX, LARG_TEX);
+            for (let i = 0; i < 900; i++) {          // manchas de terra batida
+                x.globalAlpha = 0.02 + Math.random() * 0.05;
+                x.fillStyle = ['#2a2318', '#171310', '#3a2f1e'][Math.floor(Math.random() * 3)];
+                x.beginPath();
+                x.arc(Math.random() * LARG_TEX, Math.random() * LARG_TEX, 8 + Math.random() * 70, 0, 6.3);
+                x.fill();
             }
-            if (n8n !== null && n8n !== undefined) {
-                n8nCountSpan.innerText = `${n8n}/${MIN_ENVIO}`;
-                gaugeN8n.style.width = Math.min(100, (n8n / MIN_ENVIO) * 100) + '%';
+            for (let i = 0; i < 1400; i++) {         // pedrisco
+                x.globalAlpha = 0.05 + Math.random() * 0.18;
+                x.fillStyle = Math.random() > 0.5 ? '#4a3d26' : '#000000';
+                x.fillRect(Math.random() * LARG_TEX, Math.random() * LARG_TEX,
+                           1 + Math.random() * 2.4, 1 + Math.random() * 2.4);
             }
-        }
-        function copyToClipboard(txt, btn) {
-            navigator.clipboard.writeText(txt).then(() => {
-                btn.textContent = '✓';
-                setTimeout(() => btn.textContent = '⎘', 2000);
-            });
-        }
-        // Montado com createElement: aspas, acentos e emojis no texto da IA
-        // não conseguem mais quebrar o HTML do card.
-        function addAICard(ctx, res, ehReserva) {
-            if (aiFeed.querySelector('.ai-empty')) aiFeed.innerHTML = '';
-            const card = document.createElement('div');
-            card.className = 'ai-card' + (ehReserva ? ' reserva' : '');
-            const c = document.createElement('div');
-            c.className = 'ai-card-ctx';
-            c.textContent = `Trecho ${cultoTrechos.length}${ehReserva ? ' · RESERVA' : ''} · "${String(ctx).substring(0,50)}..."`;
-            const t = document.createElement('div');
-            t.className = 'ai-card-text';
-            t.textContent = res;
-            const b = document.createElement('button');
-            b.className = 'copy-btn'; b.textContent = '⎘';
-            b.addEventListener('click', () => copyToClipboard(res, b));
-            card.append(c, t, b);
-            aiFeed.prepend(card);
-        }
-
-        // ═══════════════════════════════════════════════
-        // ÁUDIO & ENVIO
-        // ═══════════════════════════════════════════════
-        function toggleSystem() {
-            isSystemOn = !isSystemOn; lastActivityTime = Date.now();
-            if (isSystemOn) {
-                powerBtn.innerHTML = '<span class="pulse-dot"></span> Online';
-                powerBtn.classList.add('active');
-                interimText.innerText = '...escutando...'; interimText.style.opacity = '1';
-                waveWrap.classList.add('system-active');
-                addLog("Microfone ativado."); startRecognition();
-            } else {
-                powerBtn.innerHTML = '<span class="pulse-dot"></span> Offline';
-                powerBtn.classList.remove('active');
-                interimText.innerText = '...desligado...'; interimText.style.opacity = '0.3';
-                waveWrap.classList.remove('system-active');
-                addLog("Microfone desativado.");
-                if (recognition) { try { recognition.stop(); } catch(e) {} }
+            // A grade da marca fica só sugerida, gravada no chão.
+            x.globalAlpha = 1;
+            x.strokeStyle = 'rgba(201,168,76,0.075)'; x.lineWidth = 1.2;
+            for (let i = 0; i <= 16; i++) {
+                const p = (i / 16) * LARG_TEX;
+                x.beginPath(); x.moveTo(p, 0); x.lineTo(p, LARG_TEX); x.stroke();
+                x.beginPath(); x.moveTo(0, p); x.lineTo(LARG_TEX, p); x.stroke();
             }
+            return b;
         }
 
-        // Antes: travava 1500ms E chamava recognition.stop() a cada envio.
-        // O reconhecimento voltava em 200ms mas a trava seguia por mais 1,3s,
-        // e toda fala finalizada nessa janela era descartada em silêncio.
-        // Agora: sem stop(), trava de 400ms só para não disparar em duplicidade.
-        function forceSend() {
-            if (!isSystemOn || !bufferLocal.trim() || isSendingLock) return;
-            if (!sessao || Date.now() >= sessao.expira) { sessaoExpirou(); return; }
-
-            isSendingLock = true;
-            document.getElementById('sendBtn').disabled = true;
-
-            const texto = bufferLocal.trim();
-            bufferLocal = '';
-
-            cultoTrechos.push(texto);
-            atualizarContextoBox();
-            addLog(`Trecho ${cultoTrechos.length} transmitido (${texto.length} chars).`);
-            enviarParaN8n(texto);
-
-            interimText.innerText = '...';
-            atualizarMedidores(0, null);
-
-            setTimeout(() => {
-                isSendingLock = false;
-                document.getElementById('sendBtn').disabled = false;
-            }, 400);
-        }
-
-        function startRecognition() {
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                return alert("Utilize o Chrome.");
+        function desenharChao(calor) {
+            const x = chaoCtx;
+            x.globalCompositeOperation = 'source-over';
+            x.globalAlpha = 1;
+            x.clearRect(0, 0, LARG_TEX, LARG_TEX);
+            x.drawImage(chaoBase, 0, 0);
+            if (avancoRachadura > 0) {
+                // 1) a fenda: buraco escuro, sem brilho nenhum
+                fissuras.forEach(f => traçarFissura(f, avancoRachadura, '#000000', 7.5, 0, 0));
+                // 2) o lábio de terra levantada, pegando a luz de cima
+                x.globalAlpha = 0.42;
+                fissuras.forEach(f => traçarFissura(f, avancoRachadura, '#6b5c3c', 2.2, -1.8, -2.4));
+                // 3) o calor lá no fundo, que esfria depois da pancada
+                if (calor > 0.02) {
+                    x.globalAlpha = calor * 0.85;
+                    x.shadowColor = COR.quente;
+                    x.shadowBlur = 16 * calor;
+                    fissuras.forEach(f => traçarFissura(
+                        f, avancoRachadura, calor > 0.45 ? COR.quente : COR.ouro, 2.3, 0, 0));
+                    x.shadowBlur = 0;
+                }
+                x.globalAlpha = 1;
             }
-            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SR();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'pt-BR';
-            recognition.onstart = () => { lastActivityTime = Date.now(); };
-            recognition.onend = () => {
-                if (isSystemOn) setTimeout(() => { try { recognition.start(); } catch(e){} }, 200);
-            };
-            recognition.onerror = (ev) => {
-                if (ev.error !== 'no-speech' && ev.error !== 'aborted') addLog(`Microfone: ${ev.error}`);
-            };
-            recognition.onresult = (e) => {
-                lastActivityTime = Date.now();
-                let interimT = '';
+            chaoTex.needsUpdate = true;
+        }
 
-                for (let i = e.resultIndex; i < e.results.length; ++i) {
-                    if (e.results[i].isFinal) {
-                        const finalT = e.results[i][0].transcript.trim();
-                        if (finalT.length > minCharFilter) {
-                            // SOMA no acumulado em vez de substituir
-                            bufferLocal = (bufferLocal + ' ' + finalT).trim();
-                            interimText.innerText = bufferLocal.slice(-160);
-                            atualizarMedidores(bufferLocal.length, null);
-                            addLog(`+${finalT.length} chars · acumulado ${bufferLocal.length}/${MIN_ENVIO}`);
-                            if (bufferLocal.length >= MIN_ENVIO) forceSend();
-                        }
-                    } else {
-                        interimT += e.results[i][0].transcript;
+        function montarChao() {
+            const c = document.createElement('canvas');
+            c.width = c.height = LARG_TEX;
+            chaoCtx = c.getContext('2d');
+            chaoTex = new THREE.CanvasTexture(c);
+            chaoBase = montarBaseDaTerra();
+            gerarTodasAsFissuras();
+            desenharChao(0);
+            const chao = new THREE.Mesh(
+                new THREE.PlaneGeometry(46, 46),
+                new THREE.MeshBasicMaterial({ map: chaoTex, transparent: true })
+            );
+            chao.rotation.x = -Math.PI / 2;
+            cena.add(chao);
+        }
+
+        function montarImpacto() {
+            anel = new THREE.Mesh(
+                new THREE.RingGeometry(0.6, 0.78, 72),
+                new THREE.MeshBasicMaterial({ color: 0xffe9b0, transparent: true, opacity: 0, side: THREE.DoubleSide })
+            );
+            anel.rotation.x = -Math.PI / 2;
+            anel.position.y = 0.02;
+            cena.add(anel);
+
+            // Terra levantada: espalha rasteiro, não sobe como faísca.
+            const N = 420, pos = new Float32Array(N * 3);
+            poeiraVel = [];
+            for (let i = 0; i < N; i++) {
+                pos[i*3] = 0; pos[i*3+1] = 0; pos[i*3+2] = 0;
+                const a = Math.random() * Math.PI * 2, v = 3 + Math.random() * 9;
+                poeiraVel.push([Math.cos(a)*v, 1.4 + Math.random()*3.6, Math.sin(a)*v]);
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            poeira = new THREE.Points(geo, new THREE.PointsMaterial({
+                color: 0x8a7550, size: 0.11, transparent: true, opacity: 0, sizeAttenuation: true
+            }));
+            cena.add(poeira);
+        }
+
+        // A palavra sempre cabe no enquadramento — inclusive se a janela for
+        // reposicionada num pedaço do monitor no meio da sessão.
+        // Usa a distância de REPOUSO, não a posição atual da câmera: no primeiro
+        // ajuste a câmera ainda está em (0,0,0) e a conta daria escala zero,
+        // deixando o letreiro invisível a abertura inteira.
+        function ajustarEnquadramento() {
+            if (!camera || !grupoLetras) return;
+            const dist = DIST_REPOUSO;
+            const alturaVisivel = 2 * dist * Math.tan((camera.fov * Math.PI / 180) / 2);
+            const larguraVisivel = alturaVisivel * camera.aspect;
+            const escala = Math.min(1, (larguraVisivel * 0.78) / larguraPalavra);
+            grupoLetras.scale.setScalar(escala);
+        }
+
+        function redimensionar() {
+            if (!renderer) return;
+            const l = window.innerWidth, a = window.innerHeight;
+            camera.aspect = l / a;
+            camera.updateProjectionMatrix();
+            renderer.setSize(l, a, false);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            ajustarEnquadramento();
+        }
+
+        const easeOut = t => 1 - Math.pow(1 - t, 3);
+
+        function quadro(agora) {
+            raf = requestAnimationFrame(quadro);
+            if (document.hidden) return;
+            // No modo ambiente 30 fps bastam e sobra CPU para o culto.
+            if (modo === 'ambiente' && agora - ultimoQuadro < 33) return;
+            ultimoQuadro = agora;
+
+            const t = (agora - t0) / 1000;
+
+            if (modo === 'abertura') {
+                // Queda
+                grupoLetras.children.forEach(letra => {
+                    const d = letra.userData;
+                    const p = Math.min(1, Math.max(0, (t - d.atraso) / (T_IMPACTO - d.atraso)));
+                    const g = p * p;                                   // gravidade
+                    letra.position.y = d.alturaInicial + (d.alvoY - d.alturaInicial) * g;
+                    letra.rotation.z = d.giro * (1 - g);
+                    letra.rotation.x = d.inclina * (1 - g);
+                    // Peça de ferro não quica: afunda um dedo na terra e para.
+                    if (p >= 1 && t < T_IMPACTO + 0.5) {
+                        const q = (t - T_IMPACTO) / 0.5;
+                        letra.position.y = d.alvoY - Math.sin(q * Math.PI) * 0.09;
                     }
+                });
+
+                if (t >= T_IMPACTO) {
+                    const dt = t - T_IMPACTO;
+                    if (avancoRachadura < 1) {
+                        avancoRachadura = Math.min(1, dt / 0.85);
+                        chaoSujo = true;
+                    }
+                    const calor = Math.max(0, 1 - dt / 1.5);
+                    if (chaoSujo || dt < 1.5) { desenharChao(calor); chaoSujo = false; }
+                    tremor = Math.max(0, 0.62 * (1 - dt / 0.7));
+                    const ea = Math.min(1, dt / 0.9);
+                    anel.scale.setScalar(1 + easeOut(ea) * 15);
+                    anel.material.opacity = 0.85 * (1 - ea);
+                    const pa = poeira.geometry.attributes.position;
+                    const vida = Math.min(1, dt / 1.6);
+                    for (let i = 0; i < poeiraVel.length; i++) {
+                        const v = poeiraVel[i];
+                        pa.array[i*3]   = v[0] * dt * 0.55;
+                        pa.array[i*3+1] = Math.max(0.02, v[1] * dt * 0.5 - 4.2 * dt * dt);
+                        pa.array[i*3+2] = v[2] * dt * 0.55;
+                    }
+                    pa.needsUpdate = true;
+                    poeira.material.opacity = 0.7 * (1 - vida);
                 }
 
-                if (interimT) {
-                    const previa = (bufferLocal + ' ' + interimT).trim();
-                    interimText.innerText = previa.slice(-160);
-                    atualizarMedidores(previa.length, null);
-                    if (previa.length > CHAR_LIMIT) { addLog("Teto de 600 chars — disparando."); forceSend(); }
-                }
-            };
-            try { recognition.start(); } catch(e) {}
-        }
+                // Câmera de frente o tempo todo, na altura de quem está em pé
+                // diante da peça. Só recua um pouco depois da pancada.
+                const c = Math.min(1, Math.max(0, (t - T_IMPACTO) / 1.9));
+                const e = easeOut(c);
+                camera.position.set(
+                    Math.sin(tremor * 26) * tremor * 0.85,
+                    3.35 + (1.95 - 3.35) * e + Math.sin(tremor * 37) * tremor * 1.1,
+                    12.6 + (DIST_REPOUSO - 12.6) * e
+                );
+                camera.lookAt(0, 2.85 + (1.02 - 2.85) * e, 0);
 
-        // Watchdog: reanima o microfone e faz o flush do texto pendente.
-        setInterval(() => {
-            if (!isSystemOn) return;
-            const parado = Date.now() - lastActivityTime;
-            if (parado > 5000) { try { recognition.start(); } catch(e){} }
-            if (bufferLocal.trim() && parado > FLUSH_MS) {
-                addLog(`Silêncio de ${Math.round(FLUSH_MS/1000)}s — enviando ${bufferLocal.length} chars.`);
-                forceSend();
+                if (t >= T_FIM) entrarNoAmbiente();
+            } else if (modo === 'ambiente') {
+                // A câmera recua e sobe: a marca no chão vira textura distante,
+                // meio comida pela névoa. Durante o culto o operador lê os
+                // comentários da IA nesta tela — nada pode disputar o olho.
+                const a = t * 0.04;
+                camera.position.set(Math.sin(a) * 2.8, 5.4 + Math.sin(a * 1.7) * 0.3, 15.5 + Math.cos(a) * 1.6);
+                camera.lookAt(0, 0, -1.5);
             }
-        }, 2000);
-
-        function montarPayload(texto) {
-            return {
-                frase: texto,
-                token: sessao ? sessao.token : null,
-                contexto: {
-                    tema: cultoTema,
-                    versiculo_base: cultoVersiculo,
-                    tom: cultoTom,
-                    historico_trechos: cultoTrechos.slice(-10, -1),
-                    numero_trecho_atual: cultoTrechos.length
-                }
-            };
+            renderer.render(cena, camera);
         }
 
-        function enviarParaN8n(texto) {
-            aiStatus.innerText = 'Transmitindo...'; aiStatus.style.color = 'var(--gold)';
-            fetch(WEBHOOK_CULTO, {
+        function entrarNoAmbiente() {
+            modo = 'ambiente';
+            t0 = performance.now();
+            // O letreiro sai de cena; a marca dele fica gravada no chão.
+            grupoLetras.visible = false;
+            anel.visible = false;
+            poeira.visible = false;
+            desenharChao(0.13);   // uma brasa de leve no fundo da fenda
+            canvas.classList.remove('aceso'); canvas.classList.add('ambiente');
+            if (aoTerminar) { aoTerminar(); aoTerminar = null; }
+        }
+
+        async function iniciar(callback) {
+            if (!suportado()) return false;
+            canvas = document.getElementById('palco');
+            try {
+                renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            } catch (e) { console.warn('[palco] WebGL indisponível', e); return false; }
+
+            aoTerminar = callback;
+            cena = new THREE.Scene();
+            cena.fog = new THREE.Fog(0x07080f, 11, 30);
+            camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 100);
+
+            // Sem esperar a Cinzel, o letreiro cairia em Times New Roman.
+            try { await document.fonts.load('700 210px Cinzel'); await document.fonts.ready; }
+            catch (e) { /* segue com a serifada de reserva */ }
+
+            montarChao();
+            montarPalavra();
+            montarImpacto();
+            redimensionar();
+            window.addEventListener('resize', redimensionar);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) ultimoQuadro = 0;
+            });
+
+            document.body.classList.add('com-palco');
+            canvas.classList.add('aceso');
+            modo = 'abertura'; rodando = true; t0 = performance.now();
+            raf = requestAnimationFrame(quadro);
+            return true;
+        }
+
+        function pular() {
+            if (modo !== 'abertura') return;
+            avancoRachadura = 1;
+            entrarNoAmbiente();
+        }
+        function emAbertura() { return modo === 'abertura'; }
+
+        return { iniciar, pular, emAbertura, ativo: () => rodando };
+    })();
+
+    // ═══════════════════════════════════════════════
+    // CONFIGURAÇÃO
+    // ═══════════════════════════════════════════════
+    const WEBHOOK_CULTO    = 'https://n8n.squirrelstore.com.br/webhook/537866eb-700d-431a-83b5-13da0dcad0aa';
+    const WEBHOOK_LOGIN    = 'https://n8n.squirrelstore.com.br/webhook/alphatech-login';
+    const WEBHOOK_CHECKOUT = 'https://n8n.squirrelstore.com.br/webhook/alphatech-checkout';
+    const SESSION_DURATION = 18 * 60 * 60 * 1000;
+    const CHAR_LIMIT       = 600;   // teto duro: manda mesmo sem terminar a frase
+    const MIN_ENVIO        = 200;   // MESMO valor do MIN_CARACTERES no servidor
+    const FLUSH_MS         = 20000; // parou de falar com texto pendente? manda.
+
+    // ═══════════════════════════════════════════════
+    // ESTADO
+    // ═══════════════════════════════════════════════
+    let sessao = null;
+    let timerInterval = null;
+    let cultoTema = '', cultoVersiculo = '', cultoTom = '', cultoTrechos = [];
+    let isSystemOn = false, recognition = null, recognitionRodando = false, micNegado = false;
+    let minCharFilter = 10, lastActivityTime = Date.now(), isSendingLock = false;
+    let bufferLocal = '';
+    let planoSelecionado = { qtd: 1, preco: 2990 };
+
+    const $ = id => document.getElementById(id);
+    const logTerminal     = $('logTerminal');
+    const interimText     = $('interimText');
+    const livePreviewBox  = $('livePreviewBox');
+    const aiFeed          = $('aiFeed');
+    const powerBtn        = $('powerBtn');
+    const aiStatus        = $('aiStatus');
+    const charCountSpan   = $('charCount');
+    const n8nCountSpan    = $('n8nCount');
+    const gaugeLocal      = $('gaugeLocal');
+    const gaugeN8n        = $('gaugeN8n');
+    const filterValueSpan = $('filterValue');
+    const waveWrap        = $('waveWrap');
+    const contextoTexto   = $('contextoTexto');
+    const trechoCount     = $('trechoCount');
+    const trechoCountBar  = $('trechoCountBar');
+    const sendBtn         = $('sendBtn');
+    const sendHint        = $('sendHint');
+    const modalCompra     = $('modalCompra');
+
+    // ═══════════════════════════════════════════════
+    // LIGAÇÃO DOS BOTÕES
+    // Tudo por addEventListener: um handler que quebra aparece no console
+    // em vez de sumir calado como acontecia com onclick no HTML.
+    // ═══════════════════════════════════════════════
+    function ligarEventos() {
+        $('btnLogin').addEventListener('click', fazerLogin);
+        $('linkComprar').addEventListener('click', abrirModalCompra);
+        $('btnMaisCreditos').addEventListener('click', abrirModalCompra);
+        $('btnSair').addEventListener('click', fazerLogout);
+        $('btnEncerrar').addEventListener('click', encerrarCulto);
+        $('btnIniciar').addEventListener('click', iniciarCulto);
+        $('btnCheckout').addEventListener('click', irParaCheckout);
+        $('btnFecharModal').addEventListener('click', fecharModalCompra);
+        powerBtn.addEventListener('click', toggleSystem);
+        sendBtn.addEventListener('click', () => forceSend('botão'));
+        $('filterRange').addEventListener('input', e => updateFilterLabel(e.target.value));
+        document.querySelectorAll('.tom-btn').forEach(b => b.addEventListener('click', () => selectTom(b)));
+        document.querySelectorAll('.plano-card').forEach(c => c.addEventListener('click', () => selecionarPlano(c)));
+        modalCompra.addEventListener('click', e => { if (e.target === modalCompra) fecharModalCompra(); });
+        // Registrado UMA vez: antes ficava dentro de entrarNaPlataforma() e duplicava.
+        $('inputTema').addEventListener('input', atualizarBotaoIniciar);
+    }
+
+    // ═══════════════════════════════════════════════
+    // TECLADO
+    // Antes, qualquer Enter chamava fazerLogin() enquanto a tela de login
+    // estivesse ativa — inclusive com o modal de compra aberto por cima.
+    // ═══════════════════════════════════════════════
+    function modalAberto() { return modalCompra.classList.contains('open'); }
+    function telaAtiva(id) { return $(id).classList.contains('active'); }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && modalAberto()) { fecharModalCompra(); return; }
+        if (e.key !== 'Enter') return;
+        if (modalAberto())            { e.preventDefault(); irParaCheckout(); return; }
+        if (telaAtiva('loginScreen')) { e.preventDefault(); fazerLogin(); return; }
+        if (telaAtiva('setupScreen')) {
+            if (!$('btnIniciar').disabled) { e.preventDefault(); iniciarCulto(); }
+            return;
+        }
+        if (isSystemOn) { e.preventDefault(); forceSend('Enter'); }
+    });
+
+    // ═══════════════════════════════════════════════
+    // ABERTURA
+    // ═══════════════════════════════════════════════
+    let bootEncerrado = false;
+    function encerrarBoot() {
+        if (bootEncerrado) return;
+        bootEncerrado = true;
+        const ol = $('bootOverlay');
+        ol.style.opacity = '0';
+        ol.classList.add('saindo');            // para de capturar clique na hora
+        setTimeout(() => {
+            ol.style.display = 'none';
+            $('mainInterface').classList.add('system-ready');
+            let sessaoSalva = null;
+            try { sessaoSalva = JSON.parse(localStorage.getItem('alphatech_sessao') || 'null'); } catch(e) {}
+            if (sessaoSalva && sessaoSalva.expira > Date.now()) {
+                sessao = sessaoSalva;
+                entrarNaPlataforma();
+            }
+        }, 700);
+    }
+
+    window.addEventListener('load', async function () {
+        ligarEventos();
+        waveWrap.innerHTML = Array.from({length:26}, (_,i) => {
+            const h = 4 + Math.round(Math.random()*22);
+            return `<div class="wave-bar" style="height:${h}px;--h:${4+Math.round(Math.random()*22)}px;animation-delay:${(i*0.04).toFixed(2)}s"></div>`;
+        }).join('');
+
+        const overlay = $('bootOverlay');
+        const comPalco = await Palco.iniciar(encerrarBoot);
+        const duracao = comPalco ? 4100 : 2200;
+
+        if (comPalco) {
+            overlay.classList.add('palco-ativo');
+            overlay.style.setProperty('--boot-dur', '2.4s');
+        }
+        const pular = () => { Palco.pular(); encerrarBoot(); };
+        $('btnPular').addEventListener('click', pular);
+        overlay.addEventListener('click', pular);
+
+        const msgs = comPalco
+            ? ["Calibrando o palco...", "Verificando credenciais...", "Alpha Tech Online."]
+            : ["Verificando credenciais...", "Carregando módulos...", "Alpha Tech Online."];
+        let i = 0;
+        const iv = setInterval(() => { if (i < msgs.length) $('bootMsg').innerText = msgs[i++]; },
+                               Math.floor(duracao / 4));
+        setTimeout(() => { clearInterval(iv); if (!comPalco) encerrarBoot(); }, duracao);
+
+        // Trava de segurança. requestAnimationFrame não roda em aba de segundo
+        // plano: sem isto, abrir o app numa aba que não está à frente deixaria a
+        // abertura congelada e o programa nunca apareceria.
+        if (comPalco) {
+            setTimeout(() => {
+                if (Palco.emAbertura()) Palco.pular();
+                encerrarBoot();
+            }, duracao + 2500);
+        }
+    });
+
+    // ═══════════════════════════════════════════════
+    // REDE
+    // O servidor costuma devolver corpo vazio ou texto puro. res.json()
+    // estourava e caía no catch genérico, mostrando "Erro de conexão"
+    // mesmo quando a resposta tinha sido 200.
+    // ═══════════════════════════════════════════════
+    async function lerResposta(res) {
+        const txt = (await res.text()).trim();
+        if (!txt) {
+            if (!res.ok) throw new Error(`Servidor respondeu ${res.status} sem conteúdo.`);
+            return {};
+        }
+        try { return JSON.parse(txt); }
+        catch (e) { throw new Error(`Resposta não é JSON (${res.status}): ${txt.slice(0, 120)}`); }
+    }
+
+    // ═══════════════════════════════════════════════
+    // LOGIN
+    // ═══════════════════════════════════════════════
+    async function fazerLogin() {
+        const email = $('inputEmail').value.trim();
+        const senha = $('inputSenha').value;
+        const erro  = $('loginError');
+        const btn   = $('btnLogin');
+        if (btn.disabled) return;
+        if (!email || !senha) { erro.innerText = 'Preencha e-mail e senha.'; return; }
+        btn.disabled = true; btn.classList.add('loading');
+        btn.innerText = 'Verificando...'; erro.innerText = '';
+        try {
+            const res = await fetch(WEBHOOK_LOGIN, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(montarPayload(texto))
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.sessao_invalida) { sessaoExpirou(); return; }
-
-                // O n8n SEMPRE devolve o tamanho do balde dele.
-                // Antes esse número era recebido e jogado fora.
-                if (typeof data.buffer === 'number') atualizarMedidores(null, data.buffer);
-
-                if (data.status === 'acumulando') {
-                    aiStatus.innerText = `Acumulando ${data.buffer}/${MIN_ENVIO}`;
-                    aiStatus.style.color = 'var(--gold)';
-                    addLog(`n8n acumulando: ${data.buffer}/${MIN_ENVIO} · ${data.motivo}`);
-                    return;
-                }
-
-                atualizarMedidores(null, 0); // o n8n despejou o balde
-                if (data.reserva) {
-                    aiStatus.innerText = 'Reserva'; aiStatus.style.color = 'var(--gold)';
-                    addLog('⚠️ IA devolveu vazio — frase de reserva usada.');
-                } else {
-                    aiStatus.innerText = 'Recebido'; aiStatus.style.color = 'var(--azure)';
-                }
-                if (data.comentario) addAICard(texto, data.comentario, !!data.reserva);
-            })
-            .catch(err => {
-                console.error(err);
-                aiStatus.innerText = 'Falha de Uplink'; aiStatus.style.color = 'var(--danger)';
-                addLog("Erro de conexão com o servidor.");
+                body: JSON.stringify({ email, senha })
             });
+            const data = await lerResposta(res);
+            if (data.sucesso) {
+                sessao = {
+                    email: data.email || email,
+                    nome: data.nome || email,
+                    token: data.token,
+                    expira: data.expira || (Date.now() + SESSION_DURATION),
+                    creditos: data.creditos
+                };
+                try { localStorage.setItem('alphatech_sessao', JSON.stringify(sessao)); } catch(e) {}
+                entrarNaPlataforma();
+            } else {
+                erro.innerText = data.mensagem || 'E-mail ou senha incorretos.';
+            }
+        } catch(e) {
+            console.error('[login]', e);
+            erro.innerText = e.message.startsWith('Resposta')
+                ? 'O servidor respondeu em formato inesperado.'
+                : 'Erro de conexão. Tente novamente.';
+        } finally {
+            btn.disabled = false; btn.classList.remove('loading');
+            btn.innerHTML = '✦ &nbsp; Entrar &nbsp; ✦';
         }
+    }
+    function entrarNaPlataforma() {
+        $('loginScreen').classList.remove('active');
+        $('sessionUser').innerText = sessao.nome || sessao.email;
+        $('sessionCredits').innerText = (sessao.creditos ?? '—');
+        const bar = $('sessionBar');
+        bar.style.display = 'flex';
+        void bar.offsetWidth;   // força o reflow: sem isto a transição não roda
+        bar.classList.add('visible');
+        iniciarContador();
+        $('setupScreen').classList.add('active');
+        requestAnimationFrame(() => $('setupScreen').classList.add('entering'));
+        atualizarBotaoIniciar();
+    }
+    function fazerLogout() {
+        if (!confirm('Deseja sair? Sua sessão atual continuará válida ao retornar.')) return;
+        try { localStorage.removeItem('alphatech_sessao'); } catch(e) {}
+        sessao = null;
+        clearInterval(timerInterval);
+        location.reload();
+    }
+
+    // ═══════════════════════════════════════════════
+    // CONTADOR DE SESSÃO
+    // ═══════════════════════════════════════════════
+    function iniciarContador() {
+        atualizarContador();
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (!sessao) return;
+            if (Date.now() >= sessao.expira) { clearInterval(timerInterval); sessaoExpirou(); return; }
+            atualizarContador();
+        }, 1000);
+    }
+    function atualizarContador() {
+        if (!sessao) return;
+        const restante = Math.max(0, sessao.expira - Date.now());
+        const h = Math.floor(restante / 3600000);
+        const m = Math.floor((restante % 3600000) / 60000);
+        const s = Math.floor((restante % 60000) / 1000);
+        const display = $('timerDisplay');
+        const bar = $('timerBarFill');
+        display.innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        bar.style.width = Math.min(100, (restante / SESSION_DURATION) * 100) + '%';
+        const isWarning = restante < 30 * 60 * 1000;
+        display.classList.toggle('warning', isWarning);
+        bar.classList.toggle('warning', isWarning);
+    }
+    function sessaoExpirou() {
+        try { localStorage.removeItem('alphatech_sessao'); } catch(e) {}
+        alert('⏰ Sua sessão de 18h expirou.\n\nSe você tem mais créditos, faça login novamente para iniciar uma nova sessão.');
+        location.reload();
+    }
+
+    // ═══════════════════════════════════════════════
+    // SETUP DO CULTO
+    // ═══════════════════════════════════════════════
+    function atualizarBotaoIniciar() {
+        const temTema = $('inputTema').value.trim().length > 0;
+        $('btnIniciar').disabled = !temTema;
+        $('setupHint').innerText = temTema
+            ? (cultoTom ? `Tom: ${cultoTom} · pronto para iniciar` : 'Sem tom escolhido, o culto começa como Geral')
+            : 'Informe o tema para liberar o início';
+    }
+    function selectTom(btn) {
+        document.querySelectorAll('.tom-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        cultoTom = btn.dataset.tom;
+        atualizarBotaoIniciar();
+    }
+    function iniciarCulto() {
+        if ($('btnIniciar').disabled) return;
+        cultoTema = $('inputTema').value.trim();
+        cultoVersiculo = $('inputVersiculo').value.trim();
+        if (!cultoTom) cultoTom = 'Geral';
+        cultoTrechos = [];
+        bufferLocal = '';
+        atualizarMedidores(0, 0);
+        $('barTema').innerText = cultoTema;
+        $('barTom').innerText = cultoTom;
+        $('barVersiculo').innerText = cultoVersiculo ? '📖 ' + cultoVersiculo : '';
+        const setup = $('setupScreen');
+        setup.style.transition = 'opacity 0.4s, transform 0.4s';
+        setup.style.opacity = '0'; setup.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+            setup.classList.remove('active');
+            document.body.classList.add('modo-culto');
+            const bar = $('cultoBar');
+            const grid = $('mainGrid');
+            bar.style.display = 'flex';
+            grid.style.display = 'grid';
+            void bar.offsetWidth;   // força o reflow antes de disparar o fade
+            bar.classList.add('visible'); grid.classList.add('visible');
+            addLog(`Culto iniciado — "${cultoTema}" · ${cultoTom}`);
+            if (cultoVersiculo) addLog(`Base: ${cultoVersiculo}`);
+            addLog(`Transmite ao servidor a cada ${MIN_ENVIO} caracteres captados.`);
+            atualizarBotaoEnvio();
+        }, 420);
+    }
+    function encerrarCulto() {
+        if (!confirm('Encerrar o culto e limpar o contexto?')) return;
+        if (isSystemOn) toggleSystem();
+        cultoTrechos = [];
+        bufferLocal = '';
+        atualizarMedidores(0, 0);
+        const bar = $('cultoBar');
+        const grid = $('mainGrid');
+        bar.classList.remove('visible'); grid.classList.remove('visible');
+        setTimeout(() => {
+            bar.style.display = 'none'; grid.style.display = 'none';
+            document.body.classList.remove('modo-culto');
+            const setup = $('setupScreen');
+            setup.classList.add('active');
+            setup.style.opacity = '1'; setup.style.transform = 'translateY(0)';
+            $('inputTema').value = '';
+            $('inputVersiculo').value = '';
+            document.querySelectorAll('.tom-btn').forEach(b => b.classList.remove('selected'));
+            cultoTom = '';
+            atualizarBotaoIniciar();
+            aiFeed.replaceChildren(criarVazio());
+            atualizarContextoBox();
+            atualizarBotaoEnvio();
+        }, 500);
+    }
+    function criarVazio() {
+        const w = document.createElement('div'); w.className = 'ai-empty';
+        const o = document.createElement('div'); o.className = 'ornament'; o.textContent = '⬡';
+        const s = document.createElement('span'); s.textContent = 'Aguardando transmissão';
+        w.append(o, s); return w;
+    }
+
+    // ═══════════════════════════════════════════════
+    // MODAL DE COMPRA
+    // ═══════════════════════════════════════════════
+    function abrirModalCompra() {
+        $('campoEmailCompra').style.display = sessao ? 'none' : 'flex';
+        $('linkFallback').classList.remove('visivel');
+        modalCompra.classList.add('open');
+        const alvo = sessao ? $('btnCheckout') : $('inputEmailCompra');
+        requestAnimationFrame(() => alvo.focus());
+    }
+    function fecharModalCompra() { modalCompra.classList.remove('open'); }
+    function selecionarPlano(card) {
+        document.querySelectorAll('.plano-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        planoSelecionado = { qtd: parseInt(card.dataset.qtd), preco: parseInt(card.dataset.preco) };
+    }
+
+    // A aba é aberta AGORA, dentro do clique. window.open() depois de um
+    // await perde o gesto do usuário e o Chrome bloqueia sem avisar — era
+    // por isso que o botão parecia morto de forma aleatória.
+    async function irParaCheckout() {
+        const btn = $('btnCheckout');
+        if (btn.disabled) return;
+        const emailCompra = sessao ? sessao.email : $('inputEmailCompra').value.trim();
+        if (!emailCompra) { alert('Informe seu e-mail para continuar.'); $('inputEmailCompra').focus(); return; }
+
+        const aba = window.open('', '_blank');   // reservada antes do await
+        btn.disabled = true; btn.innerText = 'Gerando link...';
+        $('linkFallback').classList.remove('visivel');
+        try {
+            const res = await fetch(WEBHOOK_CHECKOUT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: emailCompra,
+                    quantidade: planoSelecionado.qtd,
+                    valor: planoSelecionado.preco,
+                    descricao: `Alpha Tech — ${planoSelecionado.qtd} crédito(s) de culto`
+                })
+            });
+            const data = await lerResposta(res);
+            if (data.url_pagamento) {
+                if (aba && !aba.closed) { aba.location.href = data.url_pagamento; fecharModalCompra(); }
+                else {
+                    $('linkPagamento').href = data.url_pagamento;
+                    $('linkFallback').classList.add('visivel');
+                }
+            } else {
+                if (aba && !aba.closed) aba.close();
+                alert('Não foi possível gerar o link de pagamento. Tente novamente.');
+            }
+        } catch(e) {
+            console.error('[checkout]', e);
+            if (aba && !aba.closed) aba.close();
+            alert('Erro de conexão com o servidor de pagamento. Tente novamente.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '✦ &nbsp; Ir para Pagamento &nbsp; ✦';
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // UTILITÁRIOS
+    // ═══════════════════════════════════════════════
+    function addLog(msg) {
+        const t = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+        const d = document.createElement('div'); d.className = 'log-entry';
+        const ts = document.createElement('span'); ts.className = 'log-ts'; ts.textContent = `[${t}]`;
+        const tx = document.createElement('span'); tx.className = 'log-msg'; tx.textContent = ' ' + msg;
+        d.append(ts, tx);
+        logTerminal.appendChild(d);
+        while (logTerminal.children.length > 120) logTerminal.removeChild(logTerminal.firstChild);
+        logTerminal.scrollTop = logTerminal.scrollHeight;
+    }
+    function atualizarContextoBox() {
+        const n = cultoTrechos.length;
+        trechoCount.innerText = n + (n === 1 ? ' trecho' : ' trechos');
+        trechoCountBar.innerText = n;
+        contextoTexto.innerText = n === 0
+            ? 'Nenhum trecho enviado ainda.'
+            : '...' + cultoTrechos.slice(-3).join(' ... ').slice(-130);
+    }
+    function updateFilterLabel(val) { minCharFilter = parseInt(val); filterValueSpan.innerText = val + "c"; }
+
+    // Captado = o que o microfone pegou e ainda está aqui.
+    // Enviado = o que já saiu daqui e o servidor guarda até poder chamar a IA.
+    function atualizarMedidores(captado, enviado) {
+        if (captado !== null && captado !== undefined) {
+            charCountSpan.innerText = `${captado}/${MIN_ENVIO}`;
+            gaugeLocal.style.width = Math.min(100, (captado / MIN_ENVIO) * 100) + '%';
+            livePreviewBox.classList.toggle('buffer-warning', captado > CHAR_LIMIT - 50);
+        }
+        if (enviado !== null && enviado !== undefined) {
+            n8nCountSpan.innerText = `${enviado}/${MIN_ENVIO}`;
+            gaugeN8n.style.width = Math.min(100, (enviado / MIN_ENVIO) * 100) + '%';
+        }
+    }
+
+    // O botão diz a verdade sobre o próprio estado, em vez de aceitar o
+    // clique e não fazer nada.
+    function atualizarBotaoEnvio() {
+        const temTexto = bufferLocal.trim().length > 0;
+        sendBtn.disabled = !(isSystemOn && temTexto && !isSendingLock);
+        sendHint.innerText = !isSystemOn ? 'Ligue o microfone para transmitir'
+                           : isSendingLock ? 'Enviando...'
+                           : !temTexto    ? 'Aguardando fala para acumular'
+                                          : '[Enter] envia agora';
+    }
+
+    // ═══════════════════════════════════════════════
+    // COPIAR — a correção do "hora sim, hora não"
+    //
+    // navigator.clipboard.writeText() REJEITA com NotAllowedError sempre que a
+    // aba não está com o foco do sistema. Durante o culto isso é o normal: o
+    // operador está no OBS, no projetor, na outra janela. E o código antigo só
+    // tinha .then(), sem .catch() — a falha não aparecia em lugar nenhum.
+    //
+    // Agora: sem foco, vai direto para o execCommand, que funciona dentro do
+    // clique mesmo sem foco. Se os dois falharem, o botão avisa.
+    // ═══════════════════════════════════════════════
+    function copiaLegado(txt) {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = txt;
+            ta.setAttribute('readonly', '');
+            ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:none;opacity:0;';
+            document.body.appendChild(ta);
+            ta.select();
+            ta.setSelectionRange(0, txt.length);
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            return ok;
+        } catch (e) { console.error('[copiar/legado]', e); return false; }
+    }
+    function copiarTexto(txt) {
+        const podeApi = navigator.clipboard && window.isSecureContext && document.hasFocus();
+        if (!podeApi) return Promise.resolve(copiaLegado(txt));
+        return navigator.clipboard.writeText(txt)
+            .then(() => true)
+            .catch(err => { console.warn('[copiar/api]', err); return copiaLegado(txt); });
+    }
+    function copyToClipboard(txt, btn) {
+        copiarTexto(txt).then(ok => {
+            btn.classList.remove('ok', 'falhou');
+            btn.classList.add(ok ? 'ok' : 'falhou');
+            btn.textContent = ok ? '✓' : '✕';
+            btn.title = ok ? 'Copiado' : 'Não foi possível copiar — selecione o texto e use Ctrl+C';
+            if (!ok) addLog('Falha ao copiar. Clique na página primeiro e tente de novo.');
+            clearTimeout(btn._t);
+            btn._t = setTimeout(() => {
+                btn.textContent = '⎘';
+                btn.title = 'Copiar comentário';
+                btn.classList.remove('ok', 'falhou');
+            }, 2000);
+        });
+    }
+
+    function addAICard(ctx, res, ehReserva) {
+        const vazio = aiFeed.querySelector('.ai-empty');
+        if (vazio) vazio.remove();
+        const card = document.createElement('div');
+        card.className = 'ai-card' + (ehReserva ? ' reserva' : '');
+        const c = document.createElement('div');
+        c.className = 'ai-card-ctx';
+        c.textContent = `Trecho ${cultoTrechos.length}${ehReserva ? ' · RESERVA' : ''} · "${String(ctx).substring(0,50)}..."`;
+        const t = document.createElement('div');
+        t.className = 'ai-card-text';
+        t.textContent = res;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'copy-btn'; b.textContent = '⎘';
+        b.setAttribute('aria-label', 'Copiar comentário');
+        b.title = 'Copiar comentário';
+        b.addEventListener('click', () => copyToClipboard(res, b));
+        card.append(c, t, b);
+        aiFeed.prepend(card);
+    }
+
+    // ═══════════════════════════════════════════════
+    // ÁUDIO & ENVIO
+    // ═══════════════════════════════════════════════
+    function toggleSystem() {
+        if (!isSystemOn && micNegado) {
+            addLog('Microfone bloqueado. Libere o acesso no cadeado da barra de endereço.');
+            return;
+        }
+        isSystemOn = !isSystemOn; lastActivityTime = Date.now();
+        powerBtn.setAttribute('aria-pressed', String(isSystemOn));
+        if (isSystemOn) {
+            powerBtn.innerHTML = '<span class="pulse-dot"></span> Online';
+            powerBtn.classList.add('active');
+            interimText.innerText = '...escutando...'; interimText.style.opacity = '1';
+            waveWrap.classList.add('system-active');
+            addLog("Microfone ativado."); startRecognition();
+        } else {
+            powerBtn.innerHTML = '<span class="pulse-dot"></span> Offline';
+            powerBtn.classList.remove('active');
+            interimText.innerText = '...desligado...'; interimText.style.opacity = '0.3';
+            waveWrap.classList.remove('system-active');
+            addLog("Microfone desativado.");
+            if (recognition) { try { recognition.stop(); } catch(e) {} }
+        }
+        atualizarBotaoEnvio();
+    }
+
+    function forceSend(origem) {
+        if (isSendingLock) return;
+        // Antes era um `return` mudo nos três casos. Agora cada um diz o porquê.
+        if (!isSystemOn)         { addLog('Microfone desligado — ligue a captação antes de transmitir.'); return; }
+        if (!bufferLocal.trim()) { addLog('Nada captado ainda para transmitir.'); return; }
+        if (!sessao || Date.now() >= sessao.expira) { sessaoExpirou(); return; }
+
+        isSendingLock = true;
+        atualizarBotaoEnvio();
+
+        const texto = bufferLocal.trim();
+        bufferLocal = '';
+
+        cultoTrechos.push(texto);
+        atualizarContextoBox();
+        addLog(`Trecho ${cultoTrechos.length} transmitido (${texto.length} chars${origem ? ' · ' + origem : ''}).`);
+        enviarParaServidor(texto);
+
+        interimText.innerText = '...';
+        atualizarMedidores(0, null);
+
+        setTimeout(() => { isSendingLock = false; atualizarBotaoEnvio(); }, 400);
+    }
+
+    function startRecognition() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+            addLog('Este navegador não reconhece voz. Use o Google Chrome.');
+            alert('Reconhecimento de voz indisponível neste navegador.\n\nUse o Google Chrome no computador.');
+            if (isSystemOn) toggleSystem();
+            return;
+        }
+        recognition = new SR();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'pt-BR';
+        recognition.onstart = () => { recognitionRodando = true; lastActivityTime = Date.now(); };
+        recognition.onend = () => {
+            recognitionRodando = false;
+            if (isSystemOn) setTimeout(() => { try { recognition.start(); } catch(e){} }, 200);
+        };
+        recognition.onerror = (ev) => {
+            // Permissão negada deixava o botão mentindo "Online" para sempre.
+            if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+                micNegado = true;
+                addLog('Permissão de microfone negada pelo navegador.');
+                if (isSystemOn) toggleSystem();
+                return;
+            }
+            if (ev.error !== 'no-speech' && ev.error !== 'aborted') addLog(`Microfone: ${ev.error}`);
+        };
+        recognition.onresult = (e) => {
+            lastActivityTime = Date.now();
+            let interimT = '';
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                if (e.results[i].isFinal) {
+                    const finalT = e.results[i][0].transcript.trim();
+                    if (finalT.length > minCharFilter) {
+                        bufferLocal = (bufferLocal + ' ' + finalT).trim();
+                        interimText.innerText = bufferLocal.slice(-160);
+                        atualizarMedidores(bufferLocal.length, null);
+                        atualizarBotaoEnvio();
+                        addLog(`+${finalT.length} chars · captado ${bufferLocal.length}/${MIN_ENVIO}`);
+                        if (bufferLocal.length >= MIN_ENVIO) forceSend('cota');
+                    }
+                } else {
+                    interimT += e.results[i][0].transcript;
+                }
+            }
+            if (interimT) {
+                const previa = (bufferLocal + ' ' + interimT).trim();
+                interimText.innerText = previa.slice(-160);
+                atualizarMedidores(previa.length, null);
+                if (previa.length > CHAR_LIMIT) { addLog("Teto de 600 chars — disparando."); forceSend('teto'); }
+            }
+        };
+        try { recognition.start(); } catch(e) { console.warn('[mic]', e); }
+    }
+
+    // Watchdog: reanima o microfone e despeja o texto pendente.
+    // Só chama start() quando o reconhecimento realmente parou — antes ele
+    // disparava a cada 2s e enchia o console de InvalidStateError.
+    setInterval(() => {
+        if (!isSystemOn || !recognition) return;
+        const parado = Date.now() - lastActivityTime;
+        if (parado > 5000 && !recognitionRodando) { try { recognition.start(); } catch(e){} }
+        if (bufferLocal.trim() && parado > FLUSH_MS) {
+            addLog(`Silêncio de ${Math.round(FLUSH_MS/1000)}s — enviando ${bufferLocal.length} chars.`);
+            forceSend('silêncio');
+        }
+    }, 2000);
+
+    function montarPayload(texto) {
+        return {
+            frase: texto,
+            token: sessao ? sessao.token : null,
+            contexto: {
+                tema: cultoTema,
+                versiculo_base: cultoVersiculo,
+                tom: cultoTom,
+                historico_trechos: cultoTrechos.slice(-10, -1),
+                numero_trecho_atual: cultoTrechos.length
+            }
+        };
+    }
+
+    function enviarParaServidor(texto) {
+        aiStatus.innerText = 'Transmitindo...'; aiStatus.style.color = 'var(--gold)';
+        fetch(WEBHOOK_CULTO, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(montarPayload(texto))
+        })
+        .then(lerResposta)
+        .then(data => {
+            if (data.sessao_invalida) { sessaoExpirou(); return; }
+            if (typeof data.buffer === 'number') atualizarMedidores(null, data.buffer);
+
+            if (data.status === 'acumulando') {
+                aiStatus.innerText = `Acumulando ${data.buffer}/${MIN_ENVIO}`;
+                aiStatus.style.color = 'var(--gold)';
+                addLog(`Servidor acumulando: ${data.buffer}/${MIN_ENVIO} · ${data.motivo || ''}`);
+                return;
+            }
+
+            atualizarMedidores(null, 0);
+            if (data.reserva) {
+                aiStatus.innerText = 'Reserva'; aiStatus.style.color = 'var(--gold)';
+                addLog('⚠️ IA devolveu vazio — frase de reserva usada.');
+            } else {
+                aiStatus.innerText = 'Recebido'; aiStatus.style.color = 'var(--azure)';
+            }
+            if (data.comentario) addAICard(texto, data.comentario, !!data.reserva);
+        })
+        .catch(err => {
+            console.error('[servidor]', err);
+            aiStatus.innerText = 'Falha de Uplink'; aiStatus.style.color = 'var(--danger)';
+            addLog('Erro ao falar com o servidor: ' + err.message);
+        });
+    }
     </script>
 </body>
 </html>
