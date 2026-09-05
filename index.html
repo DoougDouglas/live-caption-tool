@@ -219,6 +219,12 @@
            Ouvindo: apagado, porque o reconhecimento ainda pode reescrever. */
         #textoFirmado { color: var(--gold-light); }
         #textoOuvindo { color: rgba(245, 240, 232, 0.34); }
+        .buffer-meta .hint.recusado { color: var(--danger); }
+        .live-preview.piscando { animation: piscaAviso 0.5s ease-in-out 3; }
+        @keyframes piscaAviso {
+            0%, 100% { border-color: var(--border); border-left-color: var(--gold); }
+            50% { border-color: var(--danger); border-left-color: var(--danger); }
+        }
         /* ── MEDIDORES DE BUFFER ── */
         .buffer-meta { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; font-size: 0.56rem; letter-spacing: 0.16em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
         .buffer-meta .hint { margin-right: auto; min-width: 0; }
@@ -238,7 +244,18 @@
         .wave-bar { flex: 1; background: var(--gold); border-radius: 1px; opacity: 0.15; min-height: 3px; }
         .system-active .wave-bar { animation: wave 0.7s ease-in-out infinite alternate; opacity: 0.6; }
         #aiStatus { font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
-        .ai-feed { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; padding-bottom: 6px; }
+        /* O teto é o que impede a página de crescer sem fim.
+           Como o body tem min-height (e não altura fixa), cada card novo
+           empurrava o painel, que esticava a grade, que esticava a página.
+           Com o teto, o excedente vira rolagem DENTRO do painel. */
+        .ai-feed {
+            flex: 1; min-height: 0; max-height: 62vh;
+            overflow-y: auto; overscroll-behavior: contain;
+            display: flex; flex-direction: column; gap: 12px;
+            padding-right: 4px; padding-bottom: 6px;
+        }
+        @media (max-width: 940px) { .ai-feed { max-height: 55vh; } }
+        @media (max-height: 700px) { .ai-feed { max-height: 68vh; } }
         .ai-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 140px; color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; gap: 12px; text-align: center; }
         .ai-empty .ornament { font-size: 2.2rem; opacity: 0.12; background: linear-gradient(135deg, var(--gold-dark), var(--gold-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .ai-card { background: linear-gradient(135deg, rgba(91,200,255,0.04) 0%, transparent 100%); border: 1px solid rgba(91,200,255,0.2); border-left: 3px solid var(--azure); padding: 12px 46px 12px 14px; position: relative; flex-shrink: 0; animation: slideCard 0.5s cubic-bezier(0.23,1,0.32,1); }
@@ -351,7 +368,7 @@
     <div id="mainInterface">
         <header class="site-header">
             <h1>Alpha Tech</h1>
-            <p class="tagline">Live Ministry Platform &nbsp;·&nbsp; v5.4</p>
+            <p class="tagline">Live Ministry Platform &nbsp;·&nbsp; v5.6</p>
             <div class="divider-ornament"><span></span><i>✦</i><span></span></div>
         </header>
         <!-- LOGIN SCREEN -->
@@ -429,10 +446,10 @@
                 <div class="panel-header">
                     <button type="button" id="powerBtn" class="btn-power" aria-pressed="false"><span class="pulse-dot"></span> Offline</button>
                     <span class="panel-header-title">✦ Entrada de Áudio</span>
-                    <div class="sens-wrap">
-                        <label for="filterRange">Sens.</label>
-                        <input type="range" id="filterRange" min="0" max="50" value="10">
-                        <span id="filterValue">10c</span>
+                    <div class="sens-wrap" title="Ignora falas confirmadas menores que este tamanho, para cortar ruído. Se a transcrição não estiver acumulando, baixe para 0.">
+                        <label for="filterRange">Ignorar até</label>
+                        <input type="range" id="filterRange" min="0" max="50" value="4">
+                        <span id="filterValue">4 letras</span>
                     </div>
                 </div>
                 <div class="panel-body">
@@ -442,7 +459,7 @@
                     </div>
                     <div class="wave-wrap" id="waveWrap"></div>
                     <div class="log-terminal" id="logTerminal" aria-live="polite">
-                        <div class="log-entry"><span class="log-ts">[SISTEMA]</span><span class="log-msg"> Alpha Tech v5.4 online.</span></div>
+                        <div class="log-entry"><span class="log-ts">[SISTEMA]</span><span class="log-msg"> Alpha Tech v5.6 online.</span></div>
                     </div>
                     <div class="live-preview-label">Transcrição em tempo real <span class="legenda-transcricao">— dourado já confirmado · apagado ainda ouvindo</span></div>
                     <div class="live-preview" id="livePreviewBox">
@@ -484,7 +501,7 @@
                 </div>
             </div>
         </div>
-        <p class="footer">Alpha Tech &nbsp;·&nbsp; Live Ministry Platform v5.4</p>
+        <p class="footer">Alpha Tech &nbsp;·&nbsp; Live Ministry Platform v5.6</p>
     </div>
     <!-- MODAL COMPRA -->
     <div class="modal-overlay" id="modalCompra" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
@@ -744,7 +761,7 @@
         let timerInterval = null;
         let cultoTema = '', cultoVersiculo = '', cultoTom = '', cultoTrechos = [];
         let isSystemOn = false, recognition = null, recognitionRodando = false, micNegado = false;
-        let minCharFilter = 10, lastActivityTime = Date.now(), isSendingLock = false, travaEnvio = null;
+        let minCharFilter = 4, lastActivityTime = Date.now(), isSendingLock = false, travaEnvio = null, travaDesde = 0;
         let bufferLocal = '';
         let planoSelecionado = { qtd: 1, preco: 2990 };
 
@@ -1135,7 +1152,7 @@
                 ? 'Nenhum trecho enviado ainda.'
                 : '...' + cultoTrechos.slice(-3).join(' ... ').slice(-130);
         }
-        function updateFilterLabel(val) { minCharFilter = parseInt(val); filterValueSpan.innerText = val + "c"; }
+        function updateFilterLabel(val) { minCharFilter = parseInt(val); filterValueSpan.innerText = val + (val === "1" ? " letra" : " letras"); }
 
         // Captado = texto JÁ CONFIRMADO pelo reconhecimento, esperando envio.
         // Enviado = o que já saiu daqui e o servidor guarda até poder chamar a IA.
@@ -1174,6 +1191,22 @@
         function avisoNaTranscricao(texto) {
             textoFirmado.textContent = '';
             textoOuvindo.textContent = texto;
+        }
+
+        // Recusa visível: a dica sob o botão fica vermelha por 4s e a caixa de
+        // transcrição pisca. Assim uma tentativa que não deu em nada não passa
+        // despercebida no meio do culto.
+        let avisoTimer = null;
+        function avisarNoEnvio(texto) {
+            sendHint.textContent = texto;
+            sendHint.classList.add('recusado');
+            livePreviewBox.classList.add('piscando');
+            clearTimeout(avisoTimer);
+            avisoTimer = setTimeout(() => {
+                sendHint.classList.remove('recusado');
+                livePreviewBox.classList.remove('piscando');
+                atualizarBotaoEnvio(textoOuvindo.textContent.trim().length);
+            }, 4000);
         }
 
         // O botão diz a verdade sobre o próprio estado, em vez de aceitar o
@@ -1265,6 +1298,12 @@
             b.addEventListener('click', () => copyToClipboard(res, b));
             card.append(c, t, b);
             aiFeed.prepend(card);
+            // Um culto de 18h renderia centenas de cards. Guarda os 40 mais
+            // recentes: o que interessa ao operador é o que a IA acabou de
+            // dizer, e o histórico completo fica no servidor.
+            while (aiFeed.querySelectorAll('.ai-card').length > 40) {
+                aiFeed.removeChild(aiFeed.lastElementChild);
+            }
         }
 
         // ═══════════════════════════════════════════════
@@ -1303,20 +1342,31 @@
         }
 
         function forceSend(origem) {
-            if (isSendingLock) return;
+            // Este era o ÚNICO caminho da função que recusava sem escrever nada
+            // em lugar nenhum. E como a trava também desabilita o botão, o
+            // clique nem chegava a acontecer: sumia sem deixar rastro. Agora
+            // ela se explica, e o vigia abaixo a solta se ela emperrar.
+            if (isSendingLock) {
+                addLog(`Envio em andamento há ${Math.round((Date.now()-travaDesde)/100)/10}s — aguarde.`);
+                return;
+            }
             // Transmitir o que JÁ foi captado não depende do microfone estar
             // ligado agora. Antes esta função exigia isSystemOn: com o
             // microfone desligado o botão não fazia nada, nem por clique nem
             // pelo Enter, e o texto que já estava no balde ficava preso.
             if (!bufferLocal.trim()) {
-                addLog(isSystemOn
-                    ? 'Nada captado ainda — fale algo antes de transmitir.'
-                    : 'Nada captado. Ligue o microfone (botão OFFLINE) para começar a captar.');
+                // O log é pequeno e rola: uma recusa só ali passa batido e dá a
+                // impressão de botão morto. Avisa também onde o olho está.
+                const porque = isSystemOn
+                    ? 'Nada confirmado ainda — o texto em cinza não conta, espere ficar dourado.'
+                    : 'Microfone desligado. Clique em OFFLINE para começar a captar.';
+                addLog(porque);
+                avisarNoEnvio(porque);
                 return;
             }
             if (!sessao || Date.now() >= sessao.expira) { sessaoExpirou(); return; }
 
-            isSendingLock = true;
+            isSendingLock = true; travaDesde = Date.now();
             atualizarBotaoEnvio();
 
             // A liberação é agendada ANTES do envio, e o envio vai dentro de um
@@ -1385,6 +1435,11 @@
                             atualizarTranscricao(interimT);
                             addLog(`+${finalT.length} confirmados · captado ${bufferLocal.length}/${MIN_ENVIO}`);
                             if (bufferLocal.length >= MIN_ENVIO) forceSend('cota');
+                        } else if (finalT.length) {
+                            // O filtro de sensibilidade descartava em silêncio.
+                            // Se ele estiver alto demais a fala some da tela e
+                            // o contador nunca sai do zero, sem explicação.
+                            addLog(`Descartado por sensibilidade: "${finalT}" (${finalT.length} ≤ ${minCharFilter}). Baixe o Sens. se isso repetir.`);
                         }
                     } else {
                         interimT += e.results[i][0].transcript;
@@ -1413,6 +1468,14 @@
         // Só chama start() quando o reconhecimento realmente parou — antes ele
         // disparava a cada 2s e enchia o console de InvalidStateError.
         setInterval(() => {
+            // Rede de segurança da trava de envio: ela dura 400ms por desenho.
+            // Se por qualquer motivo passar de 3s presa, o botão estaria morto
+            // e sem explicação — então solta e conta o que aconteceu.
+            if (isSendingLock && Date.now() - travaDesde > 3000) {
+                clearTimeout(travaEnvio);
+                liberarTrava();
+                addLog('Trava de envio destravada pelo vigia — o botão voltou.');
+            }
             if (!isSystemOn || !recognition) return;
             const parado = Date.now() - lastActivityTime;
             if (parado > 5000 && !recognitionRodando) { try { recognition.start(); } catch(e){} }
@@ -1452,6 +1515,14 @@
                     aiStatus.innerText = `Acumulando ${data.buffer}/${MIN_ENVIO}`;
                     aiStatus.style.color = 'var(--gold)';
                     addLog(`Servidor acumulando: ${data.buffer}/${MIN_ENVIO} · ${data.motivo || ''}`);
+                    // O trecho CHEGOU, mas o servidor junta até ter o bastante
+                    // para valer uma chamada à IA. Sem dizer isso, o painel
+                    // continuava em "Aguardando transmissão" e dava a impressão
+                    // de que a transmissão tinha falhado.
+                    const vazio = aiFeed.querySelector('.ai-empty span');
+                    if (vazio) {
+                        vazio.textContent = `Trecho recebido · a IA responde aos ${MIN_ENVIO} caracteres (${data.buffer} até agora)`;
+                    }
                     return;
                 }
 
